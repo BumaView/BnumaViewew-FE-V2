@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { withAdminAuth, AuthenticatedRequest } from '@/lib/middleware';
+import { mockQuestions } from '@/lib/data';
 
-let questions = require('@/lib/data').mockQuestions;
+const questions = mockQuestions;
 
 // DELETE /admin/questions - 질문 일괄 삭제 (어드민만 가능)
 async function deleteQuestionsInBulk(req: AuthenticatedRequest): Promise<NextResponse> {
@@ -23,7 +24,7 @@ async function deleteQuestionsInBulk(req: AuthenticatedRequest): Promise<NextRes
     const notFoundIds = [];
 
     for (const questionId of questionIds) {
-      const questionIndex = questions.findIndex((q: any) => q.id === questionId);
+      const questionIndex = questions.findIndex((q: { id: number }) => q.id === questionId);
       
       if (questionIndex === -1) {
         notFoundIds.push(questionId);

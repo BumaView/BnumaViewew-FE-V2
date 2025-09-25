@@ -46,7 +46,7 @@ const AdminPage = () => {
   const [showBulkUpload, setShowBulkUpload] = useState(false);
   const [sheetsUrl, setSheetsUrl] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [uploadResult, setUploadResult] = useState<any>(null);
+  const [uploadResult, setUploadResult] = useState<{ success: number; failed: number; errors?: { index: number; error: string }[] } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
@@ -122,7 +122,7 @@ const AdminPage = () => {
     }
   };
 
-  const handleFormChange = (field: string, value: any) => {
+  const handleFormChange = (field: string, value: string | string[]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -305,7 +305,7 @@ const AdminPage = () => {
       const worksheet = workbook.Sheets[workbook.SheetNames[0]];
       const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-      const questions = jsonData.map((row: any) => ({
+      const questions = (jsonData as { [key: string]: string }[]).map((row) => ({
         title: row['제목'] || row['title'] || '',
         content: row['내용'] || row['content'] || '',
         category: row['카테고리'] || row['category'] || '기술면접',
@@ -352,7 +352,7 @@ const AdminPage = () => {
       
       const questions = lines.slice(1).map(line => {
         const values = line.split(',').map(v => v.replace(/"/g, '').trim());
-        const row: any = {};
+        const row: { [key: string]: string } = {};
         headers.forEach((header, index) => {
           row[header] = values[index] || '';
         });
@@ -377,7 +377,7 @@ const AdminPage = () => {
   };
 
   // 대량 질문 생성
-  const bulkCreateQuestions = async (questions: any[]) => {
+  const bulkCreateQuestions = async (questions: Array<{ title: string; content: string; category: string; difficulty: string; field: string; tags: string[] }>) => {
     try {
       const token = localStorage.getItem('accessToken');
       const response = await fetch('/admin/questions/sheets', {
@@ -525,7 +525,7 @@ const AdminPage = () => {
                   <div className="space-y-3">
                     <div className="bg-yellow-50 border border-yellow-200 rounded-sm p-3">
                       <p className="text-xs text-yellow-800">
-                        ⚠️ Google Sheets는 반드시 <strong>"링크가 있는 모든 사용자"</strong>로 공개 설정해주세요.
+                        ⚠️ Google Sheets는 반드시 <strong>&ldquo;링크가 있는 모든 사용자&rdquo;</strong>로 공개 설정해주세요.
                       </p>
                     </div>
                     <input
@@ -557,7 +557,7 @@ const AdminPage = () => {
                         <details className="mt-2">
                           <summary className="cursor-pointer text-red-600">오류 상세보기</summary>
                           <div className="mt-2 max-h-32 overflow-y-auto">
-                            {uploadResult.errors.map((error: any, index: number) => (
+                            {uploadResult.errors.map((error: { index: number; error: string }, index: number) => (
                               <div key={index} className="text-red-600 text-xs">
                                 행 {error.index + 1}: {error.error}
                               </div>

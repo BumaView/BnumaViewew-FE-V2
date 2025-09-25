@@ -4,10 +4,11 @@ import { getQuestionById } from '@/lib/data';
 // GET /api/questions/{question_id}
 export async function GET(
   request: NextRequest,
-  { params }: { params: { question_id: string } }
+  { params }: { params: Promise<{ question_id: string }> }
 ) {
   try {
-    const questionId = parseInt(params.question_id);
+    const resolvedParams = await params;
+    const questionId = parseInt(resolvedParams.question_id);
 
     if (isNaN(questionId)) {
       return NextResponse.json(

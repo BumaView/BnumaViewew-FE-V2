@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { withAdminAuth, AuthenticatedRequest } from '@/lib/middleware';
+import { mockQuestions } from '@/lib/data';
 
-let questions = require('@/lib/data').mockQuestions;
+const questions = mockQuestions;
 
 // POST /admin/questions/sheets - 질문 일괄 등록 (어드민만 가능)
 async function createQuestionsInBulk(req: AuthenticatedRequest): Promise<NextResponse> {
@@ -46,12 +47,22 @@ async function createQuestionsInBulk(req: AuthenticatedRequest): Promise<NextRes
         continue;
       }
 
-      const newQuestion = {
+      const newQuestion: {
+        id: number;
+        title: string;
+        content: string;
+        category: string;
+        difficulty: 'easy' | 'medium' | 'hard';
+        field: string;
+        tags: string[];
+        createdAt: string;
+        updatedAt: string;
+      } = {
         id: questions.length + createdQuestions.length + 1,
         title: title.trim(),
         content: content.trim(),
         category: category.trim(),
-        difficulty,
+        difficulty: difficulty as 'easy' | 'medium' | 'hard',
         field: field.trim(),
         tags: tags || [],
         createdAt: new Date().toISOString(),

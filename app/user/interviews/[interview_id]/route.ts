@@ -21,7 +21,7 @@ export async function GET(
       );
     }
 
-    const decoded = verifyAccessToken(token) as any;
+    const decoded = verifyAccessToken(token) as { userId: number };
     if (!decoded) {
       return NextResponse.json(
         {
@@ -104,7 +104,7 @@ export async function POST(
       );
     }
 
-    const decoded = verifyAccessToken(token) as any;
+    const decoded = verifyAccessToken(token) as { userId: number };
     if (!decoded) {
       return NextResponse.json(
         {

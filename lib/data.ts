@@ -280,10 +280,10 @@ declare global {
   var __bookmarks: Bookmark[] | undefined;
 }
 
-let questions = globalThis.__questions || [...mockQuestions];
-let interviewSessions = globalThis.__interviewSessions || [...mockInterviewSessions];
-let bookmarkFolders = globalThis.__bookmarkFolders || [...mockBookmarkFolders];
-let bookmarks = globalThis.__bookmarks || [...mockBookmarks];
+const questions = globalThis.__questions || [...mockQuestions];
+const interviewSessions = globalThis.__interviewSessions || [...mockInterviewSessions];
+const bookmarkFolders = globalThis.__bookmarkFolders || [...mockBookmarkFolders];
+const bookmarks = globalThis.__bookmarks || [...mockBookmarks];
 
 // 전역 변수에 저장하여 Hot Reload 시에도 데이터 보존
 globalThis.__questions = questions;

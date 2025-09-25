@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { withAdminAuth, AuthenticatedRequest } from '@/lib/middleware';
+import { mockQuestions } from '@/lib/data';
 
 // 임시 질문 저장소 (실제로는 데이터베이스 사용)
-let questions = require('@/lib/data').mockQuestions;
+const questions = mockQuestions;
 
 // POST /admin/questions - 질문 단건 등록 (어드민만 가능)
 async function createQuestion(req: AuthenticatedRequest): Promise<NextResponse> {

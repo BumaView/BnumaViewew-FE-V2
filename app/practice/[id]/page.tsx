@@ -173,7 +173,7 @@ const InterviewSessionPage = ({ params }: { params: Promise<{ id: string }> | { 
 
       if (response.ok) {
         const data = await response.json();
-        const bookmarkedIds = new Set<number>(data.bookmarks.map((b: any) => b.questionId as number));
+        const bookmarkedIds = new Set<number>(data.bookmarks.map((b: { questionId: number }) => b.questionId));
         setBookmarkedQuestions(bookmarkedIds);
       }
     } catch (error) {

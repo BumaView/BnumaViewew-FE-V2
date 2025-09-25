@@ -10,8 +10,10 @@ export interface AuthenticatedRequest extends NextRequest {
 }
 
 // 인증 미들웨어
-export function withAuth(handler: (req: AuthenticatedRequest) => Promise<NextResponse>) {
-  return async (req: NextRequest): Promise<NextResponse> => {
+export function withAuth<T extends Record<string, unknown>>(
+  handler: (req: AuthenticatedRequest, context?: T) => Promise<NextResponse>
+) {
+  return async (req: NextRequest, context?: T): Promise<NextResponse> => {
     const authHeader = req.headers.get('authorization');
     const token = authHeader?.replace('Bearer ', '');
 
@@ -25,7 +27,7 @@ export function withAuth(handler: (req: AuthenticatedRequest) => Promise<NextRes
       );
     }
 
-    const decoded = verifyAccessToken(token) as any;
+    const decoded = verifyAccessToken(token) as { userId: number; userType: string };
     if (!decoded) {
       return NextResponse.json(
         {
@@ -55,13 +57,15 @@ export function withAuth(handler: (req: AuthenticatedRequest) => Promise<NextRes
       role: user.role
     };
 
-    return handler(authenticatedReq);
+    return handler(authenticatedReq, context);
   };
 }
 
 // 어드민 권한 검증 미들웨어
-export function withAdminAuth(handler: (req: AuthenticatedRequest) => Promise<NextResponse>) {
-  return withAuth(async (req: AuthenticatedRequest): Promise<NextResponse> => {
+export function withAdminAuth<T extends Record<string, unknown>>(
+  handler: (req: AuthenticatedRequest, context?: T) => Promise<NextResponse>
+) {
+  return withAuth(async (req: AuthenticatedRequest, context?: T): Promise<NextResponse> => {
     if (req.user?.role !== 'admin') {
       return NextResponse.json(
         {
@@ -72,6 +76,6 @@ export function withAdminAuth(handler: (req: AuthenticatedRequest) => Promise<Ne
       );
     }
 
-    return handler(req);
+    return handler(req, context);
   });
 }

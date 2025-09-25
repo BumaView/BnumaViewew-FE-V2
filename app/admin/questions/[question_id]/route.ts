@@ -1,15 +1,23 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { withAdminAuth, AuthenticatedRequest } from '@/lib/middleware';
+import { mockQuestions } from '@/lib/data';
 
-let questions = require('@/lib/data').mockQuestions;
+const questions = mockQuestions;
 
 // PATCH /admin/questions/{question_id} - 질문 수정 (어드민만 가능)
 async function updateQuestion(
   req: AuthenticatedRequest,
-  { params }: { params: { question_id: string } }
+  context?: { params: Promise<{ question_id: string }> }
 ): Promise<NextResponse> {
   try {
-    const questionId = parseInt(params.question_id);
+    if (!context?.params) {
+      return NextResponse.json(
+        { error: 'MISSING_PARAMS', message: 'Parameters not provided' },
+        { status: 400 }
+      );
+    }
+    const resolvedParams = await context.params;
+    const questionId = parseInt(resolvedParams.question_id);
 
     if (isNaN(questionId)) {
       return NextResponse.json(
@@ -21,7 +29,7 @@ async function updateQuestion(
       );
     }
 
-    const questionIndex = questions.findIndex((q: any) => q.id === questionId);
+    const questionIndex = questions.findIndex((q: { id: number }) => q.id === questionId);
 
     if (questionIndex === -1) {
       return NextResponse.json(
@@ -78,10 +86,17 @@ async function updateQuestion(
 // DELETE /admin/questions/{question_id} - 질문 단건 삭제 (어드민만 가능)
 async function deleteQuestion(
   req: AuthenticatedRequest,
-  { params }: { params: { question_id: string } }
+  context?: { params: Promise<{ question_id: string }> }
 ): Promise<NextResponse> {
   try {
-    const questionId = parseInt(params.question_id);
+    if (!context?.params) {
+      return NextResponse.json(
+        { error: 'MISSING_PARAMS', message: 'Parameters not provided' },
+        { status: 400 }
+      );
+    }
+    const resolvedParams = await context.params;
+    const questionId = parseInt(resolvedParams.question_id);
 
     if (isNaN(questionId)) {
       return NextResponse.json(
@@ -93,7 +108,7 @@ async function deleteQuestion(
       );
     }
 
-    const questionIndex = questions.findIndex((q: any) => q.id === questionId);
+    const questionIndex = questions.findIndex((q: { id: number }) => q.id === questionId);
 
     if (questionIndex === -1) {
       return NextResponse.json(

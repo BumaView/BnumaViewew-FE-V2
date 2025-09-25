@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAccessToken, findUserById } from '@/lib/auth';
-import { getAllQuestions, getQuestionsByField, createInterviewSession } from '@/lib/data';
+import { getAllQuestions, getQuestionsByField } from '@/lib/data';
 
 // GET /user/interviews/random - 랜덤 면접 질문 추천
 export async function GET(request: NextRequest) {
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const decoded = verifyAccessToken(token) as any;
+    const decoded = verifyAccessToken(token) as { userId: number };
     if (!decoded) {
       return NextResponse.json(
         {
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const decoded = verifyAccessToken(token) as any;
+    const decoded = verifyAccessToken(token) as { userId: number };
     if (!decoded) {
       return NextResponse.json(
         {

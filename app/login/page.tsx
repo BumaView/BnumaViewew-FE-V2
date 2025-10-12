@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { signIn, getSession } from 'next-auth/react';
 import { BaseURL } from '@/lib/util';
 
 const LoginPage = () => {
@@ -66,34 +67,47 @@ const LoginPage = () => {
   };
 
   const handleGoogleLogin = async () => {
-    // Google 로그인 로직 (나중에 구현)
-    const response = await fetch(`${BaseURL}/api/auth/login/google`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    try {
+      setIsLoading(true);
+      setError('');
+      
+      const result = await signIn('google', {
+        redirect: false,
+        callbackUrl: '/dashboard'
+      });
 
-    const data = await response.json();
-
-    if (response.ok) {
-      localStorage.setItem('accessToken', data.accessToken);
-      localStorage.setItem('refreshToken', data.refreshToken);
-      localStorage.setItem('userInfo', JSON.stringify({
-        userId: data.userId,
-        name: data.name,
-        userType: data.userType,
-        onboardingCompleted: data.onboardingCompleted
-      }));
-
-      if (data.onboardingCompleted) {
-        router.push('/dashboard');
-      } else {
-        router.push('/onboarding');
+      if (result?.error) {
+        setError('Google 로그인에 실패했습니다.');
+        return;
       }
-    }
-    else {
-      setError(data.message || 'Google 로그인에 실패했습니다.');
+
+      if (result?.ok) {
+        // 세션 정보 가져오기
+        const session = await getSession();
+        if (session?.user) {
+          // localStorage에 사용자 정보 저장
+          localStorage.setItem('userInfo', JSON.stringify({
+            userId: session.user.id,
+            name: session.user.name,
+            userType: session.user.userType || 'user',
+            onboardingCompleted: session.user.onboardingCompleted || false,
+            email: session.user.email,
+            image: session.user.image
+          }));
+
+          // 온보딩 완료 여부에 따라 리다이렉트
+          if (session.user.onboardingCompleted) {
+            router.push('/dashboard');
+          } else {
+            router.push('/onboarding');
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Google login error:', error);
+      setError('Google 로그인 중 오류가 발생했습니다.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -182,7 +196,8 @@ const LoginPage = () => {
             <button
               type='button'
               onClick={handleGoogleLogin}
-              className='w-full bg-white border border-gray-200 text-gray-700 py-3 rounded-sm text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-3'
+              disabled={isLoading}
+              className='w-full bg-white border border-gray-200 text-gray-700 py-3 rounded-sm text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed'
             >
               <svg width="18" height="18" viewBox="0 0 24 24">
                 <path fill="#4285f4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -190,7 +205,7 @@ const LoginPage = () => {
                 <path fill="#fbbc05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                 <path fill="#ea4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
               </svg>
-              Google로 로그인
+              {isLoading ? '로그인 중...' : 'Google로 로그인'}
             </button>
           </form>
 

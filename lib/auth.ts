@@ -11,6 +11,8 @@ export interface User {
   password: string;
   name: string;
   role: 'user' | 'admin';
+  email?: string;
+  image?: string;
   // 온보딩 정보
   age?: number;
   desiredField?: string;
@@ -312,4 +314,29 @@ export function updateUserProfile(userId: number, profileData: Partial<User>): U
 // 사용자 ID로 찾기
 export function findUserById(userId: number): User | undefined {
   return users.find(user => user.id === userId);
+}
+
+// 이메일로 사용자 찾기 (구글 로그인용)
+export function findUserByEmail(email: string): User | undefined {
+  return users.find(user => user.email === email);
+}
+
+// 구글 로그인용 사용자 생성
+export function createGoogleUser(email: string, name: string, image?: string): User {
+  const username = email.split('@')[0];
+  const hashedPassword = bcrypt.hashSync('google_oauth_password', 10);
+  
+  const newUser: User = {
+    id: users.length + 1,
+    username,
+    password: hashedPassword,
+    name,
+    role: 'user',
+    email,
+    image,
+    onboardingCompleted: false
+  };
+  
+  users.push(newUser);
+  return newUser;
 }

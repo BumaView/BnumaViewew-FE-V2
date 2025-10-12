@@ -20,6 +20,7 @@ BUMAVIEW는 마이스터고 학생들을 위한 AI 기반 면접 연습 플랫�
 
 ### 👤 사용자 관리
 - **회원가입/로그인**: 안전한 계정 관리
+- **구글 로그인**: OAuth 2.0 기반 소셜 로그인
 - **온보딩**: 초기 설정을 통한 맞춤형 경험 제공
 - **프로필 관리**: 개인 정보 및 학습 목표 설정
 
@@ -38,6 +39,7 @@ BUMAVIEW는 마이스터고 학생들을 위한 AI 기반 면접 연습 플랫�
 
 ### Backend
 - **Next.js API Routes** - 서버리스 API 엔드포인트
+- **NextAuth.js** - 인증 및 세션 관리
 - **JWT (jsonwebtoken)** - 인증 및 보안
 - **bcryptjs** - 비밀번호 암호화
 
@@ -109,12 +111,29 @@ bumaview/
    
    `.env.local` 파일에 필요한 환경 변수를 설정하세요:
    ```env
+   # JWT Secrets
    JWT_SECRET=your_jwt_secret
-   DATABASE_URL=your_database_url
-   NEXT_PUBLIC_API_URL=your_api_url
+   JWT_REFRESH_SECRET=your_refresh_secret
+   
+   # NextAuth.js
+   NEXTAUTH_SECRET=your_nextauth_secret
+   NEXTAUTH_URL=http://localhost:3000
+   
+   # Google OAuth (구글 로그인용)
+   GOOGLE_CLIENT_ID=your_google_client_id
+   GOOGLE_CLIENT_SECRET=your_google_client_secret
+   
+   # API Base URL
+   NEXT_PUBLIC_API_BASE_URL=http://localhost:3000
    ```
 
-4. **개발 서버 실행**
+4. **구글 OAuth 설정**
+   - [Google Cloud Console](https://console.cloud.google.com/)에서 프로젝트 생성
+   - OAuth 2.0 클라이언트 ID 생성
+   - 승인된 리디렉션 URI에 `http://localhost:3000/api/auth/callback/google` 추가
+   - 클라이언트 ID와 시크릿을 환경 변수에 설정
+
+5. **개발 서버 실행**
    ```bash
    bun dev
    # 또는

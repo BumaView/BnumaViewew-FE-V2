@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import { UserInfo } from '@/lib/types';
@@ -51,17 +51,7 @@ const AdminPage = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
-  useEffect(() => {
-    checkAdminAuth();
-  }, []);
-
-  useEffect(() => {
-    if (userInfo) {
-      loadQuestions();
-    }
-  }, [userInfo, filters]);
-
-  const checkAdminAuth = async () => {
+  const checkAdminAuth = useCallback(async () => {
     const token = localStorage.getItem('accessToken');
     const storedUserInfo = localStorage.getItem('userInfo');
 
@@ -96,9 +86,9 @@ const AdminPage = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [router]);
 
-  const loadQuestions = async () => {
+  const loadQuestions = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken');
       const queryParams = new URLSearchParams();
@@ -121,7 +111,17 @@ const AdminPage = () => {
     } catch (error) {
       console.error('Load questions error:', error);
     }
-  };
+  }, [filters]);
+
+  useEffect(() => {
+    checkAdminAuth();
+  }, [checkAdminAuth]);
+
+  useEffect(() => {
+    if (userInfo) {
+      loadQuestions();
+    }
+  }, [userInfo, loadQuestions]);
 
   const handleFormChange = (field: string, value: string | string[]) => {
     setFormData(prev => ({ ...prev, [field]: value }));

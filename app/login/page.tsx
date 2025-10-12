@@ -58,7 +58,7 @@ const LoginPage = () => {
       } else {
         setError(data.message || '로그인에 실패했습니다.');
       }
-    } catch (error) {
+    } catch (_error) {
       setError('네트워크 오류가 발생했습니다.');
     } finally {
       setIsLoading(false);

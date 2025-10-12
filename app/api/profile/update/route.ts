@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 민감한 정보 제외하고 응답
-    const { password: _, ...userResponse } = updatedUser;
+    const { password: _password, ...userResponse } = updatedUser;
 
     return NextResponse.json(
       {

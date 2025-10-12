@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import { UserInfo } from '@/lib/types';
+import { BaseURL } from '@/lib/util';
 
 interface Question {
   id: number;
@@ -47,6 +48,39 @@ const ResultPage = ({ params }: { params: Promise<{ id: string }> | { id: string
   const router = useRouter();
   const sessionId = resolvedParams.id;
 
+  const loadSession = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      console.log('Result page: Loading session with ID:', sessionId);
+      
+      const response = await fetch(`${BaseURL}/user/interviews/${sessionId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      console.log('Result page: Response status:', response.status);
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Result page: Session data received:', data);
+        
+        // API 응답이 직접 세션 객체인지 확인
+        const sessionData = data.session || data;
+        setSession(sessionData);
+      } else {
+        const errorData = await response.json();
+        console.error('Result page: Load session error:', errorData);
+        alert(`면접 결과를 불러올 수 없습니다: ${errorData.message || '알 수 없는 오류'}`);
+        router.push('/practice');
+      }
+    } catch (error) {
+      console.error('Result page: Load session error:', error);
+      alert('네트워크 오류가 발생했습니다.');
+      router.push('/practice');
+    }
+  }, [sessionId, router]);
+
   useEffect(() => {
     const checkAuthAndLoadSession = async () => {
       const token = localStorage.getItem('accessToken');
@@ -59,7 +93,7 @@ const ResultPage = ({ params }: { params: Promise<{ id: string }> | { id: string
 
       try {
         // 토큰 검증
-        const authResponse = await fetch('/api/auth/verify', {
+        const authResponse = await fetch(`${BaseURL}/api/auth/verify`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -87,40 +121,7 @@ const ResultPage = ({ params }: { params: Promise<{ id: string }> | { id: string
     };
 
     checkAuthAndLoadSession();
-  }, [router, sessionId]);
-
-  const loadSession = async () => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      console.log('Result page: Loading session with ID:', sessionId);
-      
-      const response = await fetch(`/user/interviews/${sessionId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      console.log('Result page: Response status:', response.status);
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Result page: Session data received:', data);
-        
-        // API 응답이 직접 세션 객체인지 확인
-        const sessionData = data.session || data;
-        setSession(sessionData);
-      } else {
-        const errorData = await response.json();
-        console.error('Result page: Load session error:', errorData);
-        alert(`면접 결과를 불러올 수 없습니다: ${errorData.message || '알 수 없는 오류'}`);
-        router.push('/practice');
-      }
-    } catch (error) {
-      console.error('Result page: Load session error:', error);
-      alert('네트워크 오류가 발생했습니다.');
-      router.push('/practice');
-    }
-  };
+  }, [router, sessionId, loadSession]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);

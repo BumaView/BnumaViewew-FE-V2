@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import { UserInfo } from '@/lib/types';
@@ -45,6 +45,32 @@ const PracticePage = () => {
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const router = useRouter();
 
+  const loadQuestions = useCallback(async () => {
+    try {
+      const queryParams = new URLSearchParams();
+      if (filters.field) queryParams.append('field', filters.field);
+      if (filters.search) queryParams.append('query', filters.search);
+
+      const response = await fetch(`${BaseURL}/api/questions?${queryParams}`);
+      if (response.ok) {
+        const data = await response.json();
+        let filteredQuestions = data.questions;
+
+        // 클라이언트 사이드 필터링
+        if (filters.difficulty) {
+          filteredQuestions = filteredQuestions.filter((q: Question) => q.difficulty === filters.difficulty);
+        }
+        if (filters.category) {
+          filteredQuestions = filteredQuestions.filter((q: Question) => q.category === filters.category);
+        }
+
+        setQuestions(filteredQuestions);
+      }
+    } catch (error) {
+      console.error('Load questions error:', error);
+    }
+  }, [filters]);
+
   useEffect(() => {
     const checkAuthAndLoadData = async () => {
       const token = localStorage.getItem('accessToken');
@@ -87,33 +113,7 @@ const PracticePage = () => {
     };
 
     checkAuthAndLoadData();
-  }, [router]);
-
-  const loadQuestions = async () => {
-    try {
-      const queryParams = new URLSearchParams();
-      if (filters.field) queryParams.append('field', filters.field);
-      if (filters.search) queryParams.append('query', filters.search);
-
-      const response = await fetch(`${BaseURL}/api/questions?${queryParams}`);
-      if (response.ok) {
-        const data = await response.json();
-        let filteredQuestions = data.questions;
-
-        // 클라이언트 사이드 필터링
-        if (filters.difficulty) {
-          filteredQuestions = filteredQuestions.filter((q: Question) => q.difficulty === filters.difficulty);
-        }
-        if (filters.category) {
-          filteredQuestions = filteredQuestions.filter((q: Question) => q.category === filters.category);
-        }
-
-        setQuestions(filteredQuestions);
-      }
-    } catch (error) {
-      console.error('Load questions error:', error);
-    }
-  };
+  }, [router, loadQuestions]);
 
   const loadBookmarks = async () => {
     try {
@@ -154,7 +154,7 @@ const PracticePage = () => {
     if (userInfo) {
       loadQuestions();
     }
-  }, [filters, userInfo]);
+  }, [userInfo, loadQuestions]);
 
   const handleFilterChange = (key: string, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));

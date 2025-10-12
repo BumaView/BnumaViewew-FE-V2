@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import { UserInfo } from '@/lib/types';
+import { BaseURL } from '@/lib/util';
 
 const DashboardPage = () => {
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
@@ -21,7 +22,7 @@ const DashboardPage = () => {
       }
 
       try {
-        const response = await fetch('/api/auth/verify', {
+        const response = await fetch(`${BaseURL}/api/auth/verify`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -55,13 +56,6 @@ const DashboardPage = () => {
 
     checkAuth();
   }, [router]);
-
-  const handleLogout = () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('userInfo');
-    router.push('/');
-  };
 
   if (isLoading) {
     return (

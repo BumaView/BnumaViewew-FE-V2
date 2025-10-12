@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, use } from 'react';
+import { useState, useEffect, useRef, use, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { BaseURL } from '@/lib/util';
@@ -55,10 +55,61 @@ const InterviewSessionPage = ({ params }: { params: Promise<{ id: string }> | { 
   const totalTimerRef = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
 
+  const loadSession = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      console.log('Loading session with ID:', resolvedParams.id);
+      console.log('Token exists:', token ? 'yes' : 'no');
+      
+      const response = await fetch(`${BaseURL}/user/interviews/${resolvedParams.id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      console.log('Load session response status:', response.status);
+
+      if (response.ok) {
+        const sessionData = await response.json();
+        console.log('Session data loaded:', sessionData);
+        
+        if (!sessionData.questions || sessionData.questions.length === 0) {
+          console.error('Session has no questions');
+          alert('면접 세션에 질문이 없습니다.');
+          router.push('/practice');
+          return;
+        }
+        
+        setSession(sessionData);
+        
+        // 이미 답변한 질문이 있다면 다음 질문으로 이동
+        if (sessionData.answers.length > 0) {
+          setCurrentQuestionIndex(Math.min(sessionData.answers.length, sessionData.questions.length - 1));
+        }
+        
+        // 완료된 면접이라면 결과 페이지로 이동
+        if (sessionData.status === 'completed') {
+          router.push(`/practice/${resolvedParams.id}/result`);
+        }
+      } else {
+        const errorData = await response.json();
+        console.error('Load session error:', errorData);
+        alert(`면접 세션을 불러올 수 없습니다: ${errorData.message || '알 수 없는 오류'}`);
+        router.push('/practice');
+      }
+    } catch (error) {
+      console.error('Load session error:', error);
+      alert('네트워크 오류가 발생했습니다.');
+      router.push('/practice');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [resolvedParams.id, router]);
+
   useEffect(() => {
     loadSession();
     loadBookmarks();
-  }, []);
+  }, [loadSession]);
 
   useEffect(() => {
     // 질문이 바뀔 때마다 시작 시간 기록
@@ -111,57 +162,6 @@ const InterviewSessionPage = ({ params }: { params: Promise<{ id: string }> | { 
       }
     };
   }, []);
-
-  const loadSession = async () => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      console.log('Loading session with ID:', resolvedParams.id);
-      console.log('Token exists:', token ? 'yes' : 'no');
-      
-      const response = await fetch(`${BaseURL}/user/interviews/${resolvedParams.id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      console.log('Load session response status:', response.status);
-
-      if (response.ok) {
-        const sessionData = await response.json();
-        console.log('Session data loaded:', sessionData);
-        
-        if (!sessionData.questions || sessionData.questions.length === 0) {
-          console.error('Session has no questions');
-          alert('면접 세션에 질문이 없습니다.');
-          router.push('/practice');
-          return;
-        }
-        
-        setSession(sessionData);
-        
-        // 이미 답변한 질문이 있다면 다음 질문으로 이동
-        if (sessionData.answers.length > 0) {
-          setCurrentQuestionIndex(Math.min(sessionData.answers.length, sessionData.questions.length - 1));
-        }
-        
-        // 완료된 면접이라면 결과 페이지로 이동
-        if (sessionData.status === 'completed') {
-          router.push(`/practice/${resolvedParams.id}/result`);
-        }
-      } else {
-        const errorData = await response.json();
-        console.error('Load session error:', errorData);
-        alert(`면접 세션을 불러올 수 없습니다: ${errorData.message || '알 수 없는 오류'}`);
-        router.push('/practice');
-      }
-    } catch (error) {
-      console.error('Load session error:', error);
-      alert('네트워크 오류가 발생했습니다.');
-      router.push('/practice');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const loadBookmarks = async () => {
     try {

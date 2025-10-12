@@ -17,11 +17,11 @@ export const handleApiError = (error: unknown): ApiError => {
     }
     
     if (typeof error === 'object' && error !== null) {
-        const apiError = error as any;
+        const apiError = error as Record<string, unknown>;
         return {
-            message: apiError.message || '알 수 없는 오류가 발생했습니다.',
-            statusCode: apiError.statusCode || 500,
-            code: apiError.code,
+            message: (apiError.message as string) || '알 수 없는 오류가 발생했습니다.',
+            statusCode: (apiError.statusCode as number) || 500,
+            code: apiError.code as string,
         };
     }
     

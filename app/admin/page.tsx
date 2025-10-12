@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import { UserInfo } from '@/lib/types';
 import * as XLSX from 'xlsx';
+import { BaseURL } from '@/lib/util';
 
 interface Question {
   id: number;
@@ -70,7 +71,7 @@ const AdminPage = () => {
     }
 
     try {
-      const response = await fetch('/api/auth/verify', {
+      const response = await fetch(`${BaseURL}/api/auth/verify`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -107,7 +108,7 @@ const AdminPage = () => {
       if (filters.difficulty) queryParams.append('difficulty', filters.difficulty);
       if (filters.category) queryParams.append('category', filters.category);
 
-      const response = await fetch(`/admin/questions?${queryParams}`, {
+      const response = await fetch(`${BaseURL}/admin/questions?${queryParams}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -150,8 +151,8 @@ const AdminPage = () => {
     try {
       const token = localStorage.getItem('accessToken');
       const url = editingQuestion 
-        ? `/admin/questions/${editingQuestion.id}`
-        : '/admin/questions';
+        ? `${BaseURL}/admin/questions/${editingQuestion.id}`
+        : `${BaseURL}/admin/questions`;
       const method = editingQuestion ? 'PATCH' : 'POST';
 
       const response = await fetch(url, {
@@ -212,7 +213,7 @@ const AdminPage = () => {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`/admin/questions/${questionId}`, {
+      const response = await fetch(`${BaseURL}/admin/questions/${questionId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -237,7 +238,7 @@ const AdminPage = () => {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch('/admin/questions/bulk-delete', {
+      const response = await fetch(`${BaseURL}/admin/questions/bulk-delete`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -380,7 +381,7 @@ const AdminPage = () => {
   const bulkCreateQuestions = async (questions: Array<{ title: string; content: string; category: string; difficulty: string; field: string; tags: string[] }>) => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch('/admin/questions/sheets', {
+      const response = await fetch(`${BaseURL}/admin/questions/sheets`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

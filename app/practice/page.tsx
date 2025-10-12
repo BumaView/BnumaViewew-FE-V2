@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import { UserInfo } from '@/lib/types';
+import { BaseURL } from '@/lib/util';
 
 interface Question {
   id: number;
@@ -32,6 +33,16 @@ const PracticePage = () => {
   const [isStarting, setIsStarting] = useState(false);
   const [bookmarkedQuestions, setBookmarkedQuestions] = useState<Set<number>>(new Set());
   const [isBookmarking, setIsBookmarking] = useState(false);
+  const [showAdvancedFilter, setShowAdvancedFilter] = useState(false);
+  const [advancedFilters, setAdvancedFilters] = useState({
+    count: 5,
+    difficulty: '',
+    category: '',
+    field: '',
+    tags: [] as string[],
+    excludeIds: [] as number[]
+  });
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -46,7 +57,7 @@ const PracticePage = () => {
 
       try {
         // 토큰 검증
-        const authResponse = await fetch('/api/auth/verify', {
+        const authResponse = await fetch(`${BaseURL}/api/auth/verify`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -66,6 +77,7 @@ const PracticePage = () => {
         // 질문 목록 로드
         await loadQuestions();
         await loadBookmarks();
+        await loadAvailableTags();
       } catch (error) {
         console.error('Auth check error:', error);
         router.push('/login');
@@ -83,7 +95,7 @@ const PracticePage = () => {
       if (filters.field) queryParams.append('field', filters.field);
       if (filters.search) queryParams.append('query', filters.search);
 
-      const response = await fetch(`/api/questions?${queryParams}`);
+      const response = await fetch(`${BaseURL}/api/questions?${queryParams}`);
       if (response.ok) {
         const data = await response.json();
         let filteredQuestions = data.questions;
@@ -106,7 +118,7 @@ const PracticePage = () => {
   const loadBookmarks = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch('/api/bookmarks', {
+      const response = await fetch(`${BaseURL}/api/bookmarks`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -119,6 +131,22 @@ const PracticePage = () => {
       }
     } catch (error) {
       console.error('Load bookmarks error:', error);
+    }
+  };
+
+  const loadAvailableTags = async () => {
+    try {
+      const response = await fetch(`${BaseURL}/api/questions`);
+      if (response.ok) {
+        const data = await response.json();
+        const allTags = new Set<string>();
+        data.questions.forEach((q: Question) => {
+          q.tags.forEach((tag: string) => allTags.add(tag));
+        });
+        setAvailableTags(Array.from(allTags).sort());
+      }
+    } catch (error) {
+      console.error('Load tags error:', error);
     }
   };
 
@@ -154,7 +182,7 @@ const PracticePage = () => {
       const token = localStorage.getItem('accessToken');
       console.log('Starting random interview with token:', token ? 'exists' : 'missing');
       
-      const response = await fetch('/user/interviews/random?count=5', {
+      const response = await fetch(`${BaseURL}/user/interviews/random?count=5`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -172,7 +200,7 @@ const PracticePage = () => {
         }
         
         // 랜덤 질문으로 면접 세션 생성
-        const createResponse = await fetch('/user/interviews', {
+        const createResponse = await fetch(`${BaseURL}/user/interviews`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -215,7 +243,7 @@ const PracticePage = () => {
       const token = localStorage.getItem('accessToken');
       console.log('Starting selected interview with questions:', selectedQuestions);
       
-      const response = await fetch('/user/interviews', {
+      const response = await fetch(`${BaseURL}/user/interviews`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -239,6 +267,59 @@ const PracticePage = () => {
       }
     } catch (error) {
       console.error('Start selected interview error:', error);
+      alert('네트워크 오류가 발생했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsStarting(false);
+    }
+  };
+
+  const startAdvancedRandomInterview = async () => {
+    setIsStarting(true);
+    try {
+      const token = localStorage.getItem('accessToken');
+      
+      const response = await fetch(`${BaseURL}/user/interviews/random/filter`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(advancedFilters)
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        if (!data.questions || data.questions.length === 0) {
+          alert('조건에 맞는 질문이 없습니다. 필터를 조정해주세요.');
+          return;
+        }
+        
+        // 필터된 질문으로 면접 세션 생성
+        const createResponse = await fetch(`${BaseURL}/user/interviews`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            questionIds: data.questions.map((q: Question) => q.id)
+          })
+        });
+
+        if (createResponse.ok) {
+          const sessionData = await createResponse.json();
+          router.push(`/practice/${sessionData.id}`);
+        } else {
+          const errorData = await createResponse.json();
+          alert(`면접 세션 생성에 실패했습니다: ${errorData.message || '알 수 없는 오류'}`);
+        }
+      } else {
+        const errorData = await response.json();
+        alert(`질문을 불러오는데 실패했습니다: ${errorData.message || '알 수 없는 오류'}`);
+      }
+    } catch (error) {
+      console.error('Advanced random interview error:', error);
       alert('네트워크 오류가 발생했습니다. 다시 시도해주세요.');
     } finally {
       setIsStarting(false);
@@ -273,7 +354,7 @@ const PracticePage = () => {
       
       if (isBookmarked) {
         // 북마크 제거
-        const response = await fetch('/api/bookmarks', {
+        const response = await fetch(`${BaseURL}/api/bookmarks`, {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
@@ -291,7 +372,7 @@ const PracticePage = () => {
         }
       } else {
         // 북마크 추가
-        const response = await fetch('/api/bookmarks', {
+        const response = await fetch(`${BaseURL}/api/bookmarks`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -353,8 +434,127 @@ const PracticePage = () => {
             >
               선택한 질문으로 시작 ({selectedQuestions.length}개)
             </button>
+            <button
+              onClick={() => setShowAdvancedFilter(!showAdvancedFilter)}
+              className="border border-blue-300 text-blue-700 px-6 py-3 rounded-sm text-sm font-medium hover:bg-blue-50 transition-colors"
+            >
+              {showAdvancedFilter ? '고급 필터 숨기기' : '고급 필터로 시작'}
+            </button>
           </div>
         </div>
+
+        {/* 고급 필터 */}
+        {showAdvancedFilter && (
+          <div className="bg-white rounded-sm border border-gray-100 p-6 mb-8">
+            <h2 className="text-lg font-light text-gray-900 mb-4">고급 필터로 랜덤 면접</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">문제 개수</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="20"
+                  value={advancedFilters.count}
+                  onChange={(e) => setAdvancedFilters(prev => ({ ...prev, count: parseInt(e.target.value) || 5 }))}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-sm text-sm focus:outline-none focus:border-gray-400"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">분야</label>
+                <select
+                  value={advancedFilters.field}
+                  onChange={(e) => setAdvancedFilters(prev => ({ ...prev, field: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-sm text-sm focus:outline-none focus:border-gray-400"
+                >
+                  <option value="">전체</option>
+                  <option value="프론트엔드 개발">프론트엔드 개발</option>
+                  <option value="백엔드 개발">백엔드 개발</option>
+                  <option value="풀스택 개발">풀스택 개발</option>
+                  <option value="데이터 사이언스">데이터 사이언스</option>
+                  <option value="AI/ML 엔지니어">AI/ML 엔지니어</option>
+                  <option value="DevOps">DevOps</option>
+                  <option value="모바일 개발">모바일 개발</option>
+                  <option value="게임 개발">게임 개발</option>
+                  <option value="공통">공통</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">난이도</label>
+                <select
+                  value={advancedFilters.difficulty}
+                  onChange={(e) => setAdvancedFilters(prev => ({ ...prev, difficulty: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-sm text-sm focus:outline-none focus:border-gray-400"
+                >
+                  <option value="">전체</option>
+                  <option value="easy">쉬움</option>
+                  <option value="medium">보통</option>
+                  <option value="hard">어려움</option>
+                </select>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">카테고리</label>
+                <select
+                  value={advancedFilters.category}
+                  onChange={(e) => setAdvancedFilters(prev => ({ ...prev, category: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-sm text-sm focus:outline-none focus:border-gray-400"
+                >
+                  <option value="">전체</option>
+                  <option value="기술면접">기술면접</option>
+                  <option value="인성면접">인성면접</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">태그 (다중 선택)</label>
+                <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-sm p-2">
+                  {availableTags.map(tag => (
+                    <label key={tag} className="flex items-center space-x-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={advancedFilters.tags.includes(tag)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setAdvancedFilters(prev => ({ ...prev, tags: [...prev.tags, tag] }));
+                          } else {
+                            setAdvancedFilters(prev => ({ ...prev, tags: prev.tags.filter(t => t !== tag) }));
+                          }
+                        }}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-gray-700">{tag}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-xs text-gray-500 mb-1">제외할 질문 ID (쉼표로 구분)</label>
+              <input
+                type="text"
+                placeholder="예: 1, 2, 3"
+                value={advancedFilters.excludeIds.join(', ')}
+                onChange={(e) => {
+                  const ids = e.target.value.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+                  setAdvancedFilters(prev => ({ ...prev, excludeIds: ids }));
+                }}
+                className="w-full px-3 py-2 border border-gray-200 rounded-sm text-sm focus:outline-none focus:border-gray-400"
+              />
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                onClick={startAdvancedRandomInterview}
+                disabled={isStarting}
+                className="bg-blue-600 text-white px-6 py-3 rounded-sm text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isStarting ? '시작 중...' : `고급 필터로 면접 시작 (${advancedFilters.count}문제)`}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* 필터 */}
         <div className="bg-white rounded-sm border border-gray-100 p-6 mb-6">

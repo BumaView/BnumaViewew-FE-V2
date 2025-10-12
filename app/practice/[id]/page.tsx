@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { BaseURL } from '@/lib/util';
 
 interface Question {
   id: number;
@@ -117,7 +118,7 @@ const InterviewSessionPage = ({ params }: { params: Promise<{ id: string }> | { 
       console.log('Loading session with ID:', resolvedParams.id);
       console.log('Token exists:', token ? 'yes' : 'no');
       
-      const response = await fetch(`/user/interviews/${resolvedParams.id}`, {
+      const response = await fetch(`${BaseURL}/user/interviews/${resolvedParams.id}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -165,7 +166,7 @@ const InterviewSessionPage = ({ params }: { params: Promise<{ id: string }> | { 
   const loadBookmarks = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch('/api/bookmarks', {
+      const response = await fetch(`${BaseURL}/api/bookmarks`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -189,7 +190,7 @@ const InterviewSessionPage = ({ params }: { params: Promise<{ id: string }> | { 
       const timeSpent = currentTime; // 타이머에서 가져온 시간 사용
       const token = localStorage.getItem('accessToken');
       
-      const response = await fetch(`/user/interviews/${session.id}`, {
+      const response = await fetch(`${BaseURL}/user/interviews/${session.id}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -237,7 +238,7 @@ const InterviewSessionPage = ({ params }: { params: Promise<{ id: string }> | { 
     setIsFinishing(true);
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`/user/interviews/${session.id}/finish`, {
+      const response = await fetch(`${BaseURL}/user/interviews/${session.id}/finish`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -310,7 +311,7 @@ const InterviewSessionPage = ({ params }: { params: Promise<{ id: string }> | { 
       
       if (isBookmarked) {
         // 북마크 제거
-        const response = await fetch('/api/bookmarks', {
+        const response = await fetch(`${BaseURL}/api/bookmarks`, {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
@@ -328,7 +329,7 @@ const InterviewSessionPage = ({ params }: { params: Promise<{ id: string }> | { 
         }
       } else {
         // 북마크 추가
-        const response = await fetch('/api/bookmarks', {
+        const response = await fetch(`${BaseURL}/api/bookmarks`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

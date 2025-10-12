@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { BaseURL } from '@/lib/util';
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
@@ -27,7 +28,7 @@ const LoginPage = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch(`${BaseURL}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -64,9 +65,36 @@ const LoginPage = () => {
     }
   };
 
-  const handleGoogleLogin = () => {
+  const handleGoogleLogin = async () => {
     // Google 로그인 로직 (나중에 구현)
-    alert('Google 로그인은 준비 중입니다.');
+    const response = await fetch(`${BaseURL}/api/auth/login/google`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      localStorage.setItem('accessToken', data.accessToken);
+      localStorage.setItem('refreshToken', data.refreshToken);
+      localStorage.setItem('userInfo', JSON.stringify({
+        userId: data.userId,
+        name: data.name,
+        userType: data.userType,
+        onboardingCompleted: data.onboardingCompleted
+      }));
+
+      if (data.onboardingCompleted) {
+        router.push('/dashboard');
+      } else {
+        router.push('/onboarding');
+      }
+    }
+    else {
+      setError(data.message || 'Google 로그인에 실패했습니다.');
+    }
   };
 
   return (

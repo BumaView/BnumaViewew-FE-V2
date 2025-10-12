@@ -1,7 +1,9 @@
 "use client"
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
+import { BaseURL } from "@/lib/util";
 
 export interface UserInfo {
   name: string;
@@ -9,8 +11,55 @@ export interface UserInfo {
 }
 
 export default function Header({ userInfo }: { userInfo: UserInfo | null }) {
-
   const pathname = usePathname();
+  const router = useRouter();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        // 토큰이 없으면 바로 로그인 페이지로 이동
+        router.push('/login');
+        return;
+      }
+
+      const response = await fetch(`${BaseURL}/api/auth/logout`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        // 로컬 스토리지에서 토큰 제거
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('userInfo');
+        
+        // 로그인 페이지로 이동
+        router.push('/login');
+      } else {
+        console.error('로그아웃 실패');
+        // 실패해도 토큰은 제거하고 로그인 페이지로 이동
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('userInfo');
+        router.push('/login');
+      }
+    } catch (error) {
+      console.error('로그아웃 중 오류:', error);
+      // 오류가 발생해도 토큰은 제거하고 로그인 페이지로 이동
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('userInfo');
+      router.push('/login');
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   return (
     <>
@@ -44,6 +93,13 @@ export default function Header({ userInfo }: { userInfo: UserInfo | null }) {
                   {userInfo?.name.charAt(0)}
                 </span>
               </div>
+              <button
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className="text-sm text-gray-500 hover:text-gray-900 transition-colors disabled:opacity-50"
+              >
+                {isLoggingOut ? '로그아웃 중...' : '로그아웃'}
+              </button>
             </div>
           </div>
         </div>

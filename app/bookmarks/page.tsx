@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { BaseURL } from '@/lib/util';
 
 interface Question {
   id: number;
@@ -62,7 +63,7 @@ const BookmarksPage = () => {
       }
 
       try {
-        const authResponse = await fetch('/api/auth/verify', {
+        const authResponse = await fetch(`${BaseURL}/api/auth/verify`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -94,7 +95,7 @@ const BookmarksPage = () => {
   const loadBookmarks = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch('/api/bookmarks', {
+      const response = await fetch(`${BaseURL}/api/bookmarks`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -112,7 +113,7 @@ const BookmarksPage = () => {
   const loadFolders = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch('/api/bookmarks/folders', {
+      const response = await fetch(`${BaseURL}/api/bookmarks/folders`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -134,7 +135,7 @@ const BookmarksPage = () => {
     setIsCreatingFolder(true);
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch('/api/bookmarks/folders', {
+      const response = await fetch(`${BaseURL}/api/bookmarks/folders`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -168,7 +169,7 @@ const BookmarksPage = () => {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`/api/bookmarks/${bookmarkId}`, {
+      const response = await fetch(`${BaseURL}/api/bookmarks/${bookmarkId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -193,7 +194,7 @@ const BookmarksPage = () => {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch('/user/interviews', {
+      const response = await fetch(`${BaseURL}/user/interviews`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

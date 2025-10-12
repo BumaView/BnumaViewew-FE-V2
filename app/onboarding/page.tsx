@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { BaseURL } from '@/lib/util';
 
 const OnboardingPage = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -77,7 +78,7 @@ const OnboardingPage = () => {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch('/api/profile/update', {
+      const response = await fetch(`${BaseURL}/api/profile/update`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

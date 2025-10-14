@@ -4,17 +4,34 @@ export type GoogleLoginRequest = {
 }
 
 export type LoginRequest = {
-    id: string,
-	password: string,
-	role: "Admin" | "User"
+    userId: string,
+	password: string
 }
 
 export type LogoutRequest = {
-    token: string;
+    refreshToken: string;
 }
 
 export type LogoutResponse = {
     message: string;
+}
+
+export type RegisterRequest = {
+    id: string;
+    nickname: string;
+    email: string;
+    password: string;
+    userType: "USER" | "ADMIN";
+}
+
+export type RegisterResponse = {
+    accessToken: string;
+    refreshToken: string;
+}
+
+export type LoginResponse = {
+    accessToken: string;
+    refreshToken: string;
 }
 
 export type UserLoginResponse = {

@@ -4,11 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { BaseURL } from "@/lib/util";
-
-export interface UserInfo {
-  name: string;
-  userType: string;
-}
+import { UserInfo } from "@/lib/types";
 
 export default function Header({ userInfo }: { userInfo: UserInfo | null }) {
   const pathname = usePathname();

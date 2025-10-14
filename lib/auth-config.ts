@@ -1,6 +1,6 @@
 import NextAuth, { AuthOptions } from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
-import { createGoogleUser, findUserByEmail } from '@/lib/auth'
+import { authService } from '@/services/authService'
 
 export const authOptions: AuthOptions = {
   providers: [
@@ -13,21 +13,21 @@ export const authOptions: AuthOptions = {
     async signIn({ user, account }) {
       if (account?.provider === 'google') {
         try {
-          // 이메일로 기존 사용자 확인
-          const existingUser = findUserByEmail(user.email!)
+          // 백엔드 API를 통한 구글 로그인
+          const response = await authService.googleLogin({
+            authorizationCode: account.access_token || '',
+            role: 'User'
+          })
           
-          if (!existingUser) {
-            // 새 사용자 생성
-            createGoogleUser(
-              user.email!,
-              user.name || user.email!.split('@')[0],
-              user.image || undefined
-            )
+          // 사용자 정보를 user 객체에 저장
+          if ('accessToken' in response) {
+            user.accessToken = response.accessToken
+            user.refreshToken = response.refreshToken
           }
           
           return true
         } catch (error) {
-          console.error('Sign in error:', error)
+          console.error('Google sign in error:', error)
           return false
         }
       }
@@ -36,12 +36,23 @@ export const authOptions: AuthOptions = {
     async jwt({ token, user, account }) {
       if (account?.provider === 'google' && user) {
         // 구글 로그인 시 사용자 정보를 토큰에 추가
-        const dbUser = findUserByEmail(user.email!)
-        if (dbUser) {
-          token.userId = dbUser.id
-          token.username = dbUser.username
-          token.userType = dbUser.role
-          token.onboardingCompleted = dbUser.onboardingCompleted || false
+        token.userId = Number(user.id) || 0
+        token.username = user.name || user.email!.split('@')[0]
+        token.userType = 'user'
+        token.onboardingCompleted = false
+        
+        // 백엔드에서 받은 토큰들을 저장
+        if (user.accessToken) {
+          token.accessToken = user.accessToken
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('accessToken', user.accessToken)
+          }
+        }
+        if (user.refreshToken) {
+          token.refreshToken = user.refreshToken
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('refreshToken', user.refreshToken)
+          }
         }
       }
       return token

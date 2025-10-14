@@ -3,15 +3,16 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { BaseURL } from '@/lib/util';
+import { authService } from '@/services/authService';
 
 const RegisterPage = () => {
   const [formData, setFormData] = useState({
     id: '',
+    nickname: '',
+    email: '',
     password: '',
     confirmPassword: '',
-    name: '',
-    role: 'user' as 'user' | 'admin'
+    userType: 'USER' as 'USER' | 'ADMIN'
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -37,39 +38,22 @@ const RegisterPage = () => {
     }
 
     try {
-      const response = await fetch(`${BaseURL}/api/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          id: formData.id,
-          password: formData.password,
-          name: formData.name,
-          role: formData.role
-        }),
+      const response = await authService.register({
+        id: formData.id,
+        nickname: formData.nickname,
+        email: formData.email,
+        password: formData.password,
+        userType: formData.userType
       });
 
-      const data = await response.json();
+      // 토큰을 localStorage에 저장
+      localStorage.setItem('accessToken', response.accessToken);
+      localStorage.setItem('refreshToken', response.refreshToken);
 
-      if (response.ok) {
-        // 토큰을 localStorage에 저장 (실제 환경에서는 httpOnly 쿠키 사용 권장)
-        localStorage.setItem('accessToken', data.accessToken);
-        localStorage.setItem('refreshToken', data.refreshToken);
-        localStorage.setItem('userInfo', JSON.stringify({
-          userId: data.userId,
-          name: data.name,
-          userType: data.userType,
-          onboardingCompleted: false
-        }));
-
-        // 온보딩으로 이동
-        router.push('/onboarding');
-      } else {
-        setError(data.message || '회원가입에 실패했습니다.');
-      }
-    } catch (_error) {
-      setError('네트워크 오류가 발생했습니다.');
+      // 온보딩으로 이동
+      router.push('/onboarding');
+    } catch (error: any) {
+      setError(error.message || '회원가입에 실패했습니다.');
     } finally {
       setIsLoading(false);
     }
@@ -120,9 +104,21 @@ const RegisterPage = () => {
             <div>
               <input
                 type='text'
-                name='name'
-                placeholder='이름'
-                value={formData.name}
+                name='nickname'
+                placeholder='닉네임'
+                value={formData.nickname}
+                onChange={handleChange}
+                required
+                className='w-full px-4 py-3 border border-gray-200 rounded-sm text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:border-gray-400 transition-colors'
+              />
+            </div>
+
+            <div>
+              <input
+                type='email'
+                name='email'
+                placeholder='이메일'
+                value={formData.email}
                 onChange={handleChange}
                 required
                 className='w-full px-4 py-3 border border-gray-200 rounded-sm text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:border-gray-400 transition-colors'
@@ -155,15 +151,16 @@ const RegisterPage = () => {
 
             <div>
               <select
-                name='role'
-                value={formData.role}
+                name='userType'
+                value={formData.userType}
                 onChange={handleChange}
                 className='w-full px-4 py-3 border border-gray-200 rounded-sm text-sm text-gray-700 focus:outline-none focus:border-gray-400 transition-colors'
               >
-                <option value='user'>일반 사용자</option>
-                <option value='admin'>관리자</option>
+                <option value='USER'>일반 사용자</option>
+                <option value='ADMIN'>관리자</option>
               </select>
             </div>
+
 
             <button
               type='submit'

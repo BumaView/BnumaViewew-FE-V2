@@ -3,126 +3,49 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { BaseURL } from '@/lib/util';
+import { useSession } from 'next-auth/react';
+import { bookmarkService } from '@/services/bookmarkService';
+import { bookmark } from '@/types';
 
-interface Question {
-  id: number;
-  title: string;
-  content: string;
-  category: string;
-  difficulty: 'easy' | 'medium' | 'hard';
-  field: string;
-  tags: string[];
-}
-
-interface Bookmark {
-  id: number;
-  userId: number;
-  questionId: number;
-  folderId?: number;
-  createdAt: string;
-  question: Question;
-}
-
-interface BookmarkFolder {
-  id: number;
-  userId: number;
-  name: string;
-  description?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface UserInfo {
-  userId: number;
-  name: string;
-  userType: string;
-  onboardingCompleted?: boolean;
-}
+// 타입은 이미 types/bookmark.ts에 정의되어 있음
 
 const BookmarksPage = () => {
-  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
-  const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
-  const [folders, setFolders] = useState<BookmarkFolder[]>([]);
+  const { data: session, status } = useSession();
+  const [folders, setFolders] = useState<bookmark.GetBookmarkedFolderListResponse>([]);
   const [selectedFolder, setSelectedFolder] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [folderName, setFolderName] = useState('');
-  const [folderDescription, setFolderDescription] = useState('');
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    const checkAuthAndLoadData = async () => {
-      const token = localStorage.getItem('accessToken');
-      const storedUserInfo = localStorage.getItem('userInfo');
-
-      if (!token || !storedUserInfo) {
+    const loadData = async () => {
+      if (status === 'loading') return;
+      
+      if (status === 'unauthenticated') {
         router.push('/login');
         return;
       }
 
       try {
-        const authResponse = await fetch(`${BaseURL}/api/auth/verify`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ token }),
-        });
-
-        if (!authResponse.ok) {
-          localStorage.clear();
-          router.push('/login');
-          return;
-        }
-
-        const parsedUserInfo = JSON.parse(storedUserInfo);
-        setUserInfo(parsedUserInfo);
-
-        await Promise.all([loadBookmarks(), loadFolders()]);
+        const foldersData = await bookmarkService.getBookmarkFolders();
+        setFolders(foldersData);
       } catch (error) {
-        console.error('Auth check error:', error);
+        console.error('Load data error:', error);
         router.push('/login');
       } finally {
         setIsLoading(false);
       }
     };
 
-    checkAuthAndLoadData();
-  }, [router]);
-
-  const loadBookmarks = async () => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${BaseURL}/api/bookmarks`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setBookmarks(data.bookmarks);
-      }
-    } catch (error) {
-      console.error('Load bookmarks error:', error);
-    }
-  };
+    loadData();
+  }, [status, router]);
 
   const loadFolders = async () => {
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${BaseURL}/api/bookmarks/folders`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setFolders(data.folders);
-      }
+      const foldersData = await bookmarkService.getBookmarkFolders();
+      setFolders(foldersData);
     } catch (error) {
       console.error('Load folders error:', error);
     }
@@ -134,31 +57,16 @@ const BookmarksPage = () => {
 
     setIsCreatingFolder(true);
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${BaseURL}/api/bookmarks/folders`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          name: folderName.trim(),
-          description: folderDescription.trim() || undefined
-        })
+      await bookmarkService.makeBookmarkedFolder({
+        name: folderName.trim()
       });
-
-      if (response.ok) {
-        await loadFolders();
-        setFolderName('');
-        setFolderDescription('');
-        setShowCreateFolder(false);
-      } else {
-        const error = await response.json();
-        alert(error.message || '폴더 생성에 실패했습니다.');
-      }
-    } catch (error) {
+      
+      await loadFolders();
+      setFolderName('');
+      setShowCreateFolder(false);
+    } catch (error: any) {
       console.error('Create folder error:', error);
-      alert('네트워크 오류가 발생했습니다.');
+      alert(error.message || '폴더 생성에 실패했습니다.');
     } finally {
       setIsCreatingFolder(false);
     }
@@ -168,23 +76,11 @@ const BookmarksPage = () => {
     if (!confirm('이 북마크를 삭제하시겠습니까?')) return;
 
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${BaseURL}/api/bookmarks/${bookmarkId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (response.ok) {
-        await loadBookmarks();
-      } else {
-        const error = await response.json();
-        alert(error.message || '북마크 삭제에 실패했습니다.');
-      }
-    } catch (error) {
+      await bookmarkService.unbookmarkingQuestion(bookmarkId);
+      await loadFolders();
+    } catch (error: any) {
       console.error('Remove bookmark error:', error);
-      alert('네트워크 오류가 발생했습니다.');
+      alert(error.message || '북마크 삭제에 실패했습니다.');
     }
   };
 
@@ -193,22 +89,8 @@ const BookmarksPage = () => {
     if (filteredBookmarks.length === 0) return;
 
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${BaseURL}/user/interviews`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          questionIds: filteredBookmarks.map(b => b.questionId)
-        })
-      });
-
-      if (response.ok) {
-        const sessionData = await response.json();
-        router.push(`/practice/${sessionData.id}`);
-      }
+      // 면접 세션 생성 로직은 practice 페이지에서 구현
+      router.push('/practice');
     } catch (error) {
       console.error('Start interview error:', error);
     }
@@ -216,17 +98,19 @@ const BookmarksPage = () => {
 
   const getFilteredBookmarks = () => {
     if (selectedFolder === null) {
-      return bookmarks;
+      return folders.flatMap(folder => folder.bookmarks);
     }
-    return bookmarks.filter(b => b.folderId === selectedFolder);
+    const folder = folders.find(f => f.folderId === selectedFolder);
+    return folder ? folder.bookmarks : [];
   };
 
   const getFolderBookmarkCount = (folderId: number) => {
-    return bookmarks.filter(b => b.folderId === folderId).length;
+    const folder = folders.find(f => f.folderId === folderId);
+    return folder ? folder.bookmarks.length : 0;
   };
 
-  const getUnfolderBookmarkCount = () => {
-    return bookmarks.filter(b => !b.folderId).length;
+  const getTotalBookmarkCount = () => {
+    return folders.reduce((total, folder) => total + folder.bookmarks.length, 0);
   };
 
   const getDifficultyColor = (difficulty: string) => {
@@ -278,7 +162,7 @@ const BookmarksPage = () => {
                   면접 연습
                 </Link>
                 <span className="text-sm text-gray-900 font-medium">북마크</span>
-                {userInfo?.userType === 'Admin' && (
+                {session?.user?.userType === 'Admin' && (
                   <Link href="/admin" className="text-sm text-blue-600 hover:text-blue-800 transition-colors">
                     관리자
                   </Link>
@@ -288,7 +172,7 @@ const BookmarksPage = () => {
             <div className="flex items-center space-x-4">
               <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
                 <span className="text-xs text-gray-600 font-medium">
-                  {userInfo?.name.charAt(0)}
+                  {session?.user?.name?.charAt(0) || 'U'}
                 </span>
               </div>
             </div>
@@ -322,13 +206,6 @@ const BookmarksPage = () => {
                     required
                     className="w-full px-2 py-1 border border-gray-200 rounded text-sm mb-2 focus:outline-none focus:border-gray-400"
                   />
-                  <input
-                    type="text"
-                    placeholder="설명 (선택사항)"
-                    value={folderDescription}
-                    onChange={(e) => setFolderDescription(e.target.value)}
-                    className="w-full px-2 py-1 border border-gray-200 rounded text-sm mb-2 focus:outline-none focus:border-gray-400"
-                  />
                   <div className="flex gap-2">
                     <button
                       type="submit"
@@ -342,7 +219,6 @@ const BookmarksPage = () => {
                       onClick={() => {
                         setShowCreateFolder(false);
                         setFolderName('');
-                        setFolderDescription('');
                       }}
                       className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded hover:bg-gray-300"
                     >
@@ -363,37 +239,24 @@ const BookmarksPage = () => {
                 >
                   <div className="flex justify-between items-center">
                     <span>전체 북마크</span>
-                    <span className="text-xs text-gray-400">{bookmarks.length}</span>
+                    <span className="text-xs text-gray-400">{getTotalBookmarkCount()}</span>
                   </div>
                 </button>
 
-                <button
-                  onClick={() => setSelectedFolder(0)}
-                  className={`w-full text-left px-3 py-2 rounded-sm text-sm transition-colors ${
-                    selectedFolder === 0
-                      ? 'bg-blue-50 text-blue-700'
-                      : 'text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  <div className="flex justify-between items-center">
-                    <span>미분류</span>
-                    <span className="text-xs text-gray-400">{getUnfolderBookmarkCount()}</span>
-                  </div>
-                </button>
 
                 {folders.map((folder) => (
                   <button
-                    key={folder.id}
-                    onClick={() => setSelectedFolder(folder.id)}
+                    key={folder.folderId}
+                    onClick={() => setSelectedFolder(folder.folderId)}
                     className={`w-full text-left px-3 py-2 rounded-sm text-sm transition-colors ${
-                      selectedFolder === folder.id
+                      selectedFolder === folder.folderId
                         ? 'bg-blue-50 text-blue-700'
                         : 'text-gray-600 hover:bg-gray-50'
                     }`}
                   >
                     <div className="flex justify-between items-center">
                       <span>{folder.name}</span>
-                      <span className="text-xs text-gray-400">{getFolderBookmarkCount(folder.id)}</span>
+                      <span className="text-xs text-gray-400">{folder.bookmarks.length}</span>
                     </div>
                   </button>
                 ))}
@@ -409,9 +272,7 @@ const BookmarksPage = () => {
                 <h1 className="text-2xl font-light text-gray-900 mb-2">
                   {selectedFolder === null 
                     ? '전체 북마크'
-                    : selectedFolder === 0 
-                    ? '미분류 북마크'
-                    : folders.find(f => f.id === selectedFolder)?.name || '북마크'
+                    : folders.find(f => f.folderId === selectedFolder)?.name || '북마크'
                   }
                 </h1>
                 <p className="text-gray-600">
@@ -431,46 +292,24 @@ const BookmarksPage = () => {
             {/* 북마크 목록 */}
             <div className="space-y-4">
               {filteredBookmarks.map((bookmark) => (
-                <div key={bookmark.id} className="bg-white border border-gray-100 rounded-sm p-6">
+                <div key={bookmark.bookmarkId} className="bg-white border border-gray-100 rounded-sm p-6">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <h3 className="font-medium text-gray-900">{bookmark.question.title}</h3>
-                        <span className={`px-2 py-1 text-xs rounded-full ${getDifficultyColor(bookmark.question.difficulty)}`}>
-                          {getDifficultyText(bookmark.question.difficulty)}
-                        </span>
-                        <span className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">
-                          {bookmark.question.category}
-                        </span>
-                        <span className="px-2 py-1 text-xs bg-blue-100 text-blue-600 rounded-full">
-                          {bookmark.question.field}
-                        </span>
+                        <h3 className="font-medium text-gray-900">{bookmark.question}</h3>
                       </div>
-                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                        {bookmark.question.content}
-                      </p>
                       <div className="flex items-center justify-between">
                         <div className="flex gap-2">
-                          {bookmark.question.tags.slice(0, 3).map((tag, index) => (
-                            <span key={index} className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                              {tag}
-                            </span>
-                          ))}
-                          {bookmark.question.tags.length > 3 && (
-                            <span className="text-xs text-gray-500">+{bookmark.question.tags.length - 3}</span>
-                          )}
+                          <span className="text-xs text-gray-500">질문 ID: {bookmark.questionId}</span>
                         </div>
-                        <span className="text-xs text-gray-400">
-                          {new Date(bookmark.createdAt).toLocaleDateString()}
-                        </span>
+                        <button
+                          onClick={() => removeBookmark(bookmark.bookmarkId)}
+                          className="ml-4 text-sm text-red-600 hover:text-red-800 transition-colors"
+                        >
+                          삭제
+                        </button>
                       </div>
                     </div>
-                    <button
-                      onClick={() => removeBookmark(bookmark.id)}
-                      className="ml-4 text-sm text-red-600 hover:text-red-800 transition-colors"
-                    >
-                      삭제
-                    </button>
                   </div>
                 </div>
               ))}

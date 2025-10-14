@@ -1,19 +1,17 @@
 // ===== Mock Interview 관련 타입 =====
 export type CreateMockInterviewRequest = {
     title: string;
-    tags: string[];
+    category: string;
     count: number;
 };
 
 export type CreateMockInterviewResponse = {
     id: number;
     title: string;
-    questions: [
-        {
-            id: number;
-            question: string;
-        }
-    ],
+    questions: {
+        id: number;
+        question: string;
+    }[];
     createdAt: string;
 };
 
@@ -33,18 +31,16 @@ export type SessionBySessionQuestionAnswerRecordsResponse = {
 
 export type FinishedMockInterviewResponse = {
     interviewId: number;
-    status: string;
     summary: {
         totalQuestions: number;
         totalTimeSpent: number;
         average: number;
-        answers: [
-            {
-                questionId: number;
-                timeSpent: number;
-                answer: string;
-            }
-        ]
+        answers: {
+            questionId: number;
+            answer: string;
+            timeSpent: number;
+            recordedAt: string;
+        }[]
     }
 };
 

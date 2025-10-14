@@ -20,7 +20,6 @@ export type Sort = {
 
 export type Question = {
     id: number;
-    tags: string[];
     question: string;
     company: string;
     year: number;
@@ -53,14 +52,16 @@ export type PaginatedResponse<T> = {
 };
 
 // ===== Question CRUD 관련 타입 =====
-export type RegisterSingleQuestionRequest = {
-    questions: [
-        {q: string}
-    ]
+export type RegisterQuestionRequest = {
+    questions: {q: string}[]
 };
 
-export type RegisterSingleQuestionResponse = {
+export type RegisterQuestionResponse = {
     message: string;
+    registeredQuestions: {
+        id: number;
+        q: string;
+    }[];
 };
 
 export type RegisterMultipleQuestionRequest = {
@@ -68,13 +69,14 @@ export type RegisterMultipleQuestionRequest = {
 };
 
 export type RegisterMultipleQuestionResponse = {
-    total: number;
     message: string;
+    data: {
+        total: number;
+    };
 };
 
 export type EditQuestionRequest = {
-    id: number;
-    question: string;
+    q: string;
 };
 
 export type EditQuestionResponse = {
@@ -102,43 +104,46 @@ export type SearchAllQuestionResponse = PaginatedResponse<Question>;
 export type SearchQuestionByCategoryRequest = {
     company: string;
     year: number;
-    category: string[];
-    field: string[];
+    category: string;
 };
 
 export type SearchQuestionByCategoryResponse = PaginatedResponse<Question>;
 
 export type SearchQuestionListResponse = PaginatedResponse<Question>;
 
-export type SearchQuestionByIdResponse = QuestionDetail;
+export type SearchQuestionByIdResponse = Question;
 
 // ===== Question 랜덤 선택 관련 타입 =====
 export type RandomlySelectInterviewQuestionResponse = {
     id: number;
-    tag: string[];
     question: string;
-    category: string;
+    tag: string | null;
     company: string;
-    field: string[];
     year: number;
+    category: string;
+    field: string | null;
+    authorId: string;
+    createdAt: string;
+    updatedAt: string;
 };
 
 export type RandomlySelectInterviewQuestionByFiltersRequest = {
-    tags: string[];
     category: string;
     company: string;
-    field: string[];
     year: number;
 };
 
 export type RandomlySelectInterviewQuestionByFiltersResponse = {
     id: number;
-    tags: string[];
     question: string;
-    category: string;
+    tag: string | null;
     company: string;
-    field: string[];
     year: number;
+    category: string;
+    field: string | null;
+    authorId: string;
+    createdAt: string;
+    updatedAt: string;
 };
 
 // ===== Question 에러 관련 타입 =====

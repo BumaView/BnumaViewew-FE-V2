@@ -1,7 +1,7 @@
 import axios from "axios";
 
 export const api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000",
+    baseURL: process.env.NEXT_PUBLIC_API_URL || "https://bumaview-be.onrender.com", // 백엔드 서버 URL
     timeout: 10000,
     headers: {
         "Content-Type": "application/json",

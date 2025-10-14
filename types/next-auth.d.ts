@@ -18,6 +18,8 @@ declare module 'next-auth' {
     username: string
     userType: string
     onboardingCompleted: boolean
+    accessToken?: string
+    refreshToken?: string
   }
 }
 
@@ -27,5 +29,13 @@ declare module 'next-auth/jwt' {
     username: string
     userType: string
     onboardingCompleted: boolean
+    accessToken?: string
+    refreshToken?: string
+  }
+}
+
+declare module 'next-auth' {
+  interface Account {
+    access_token?: string
   }
 }

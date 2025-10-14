@@ -18,10 +18,10 @@ export const questionService = {
     },
 
     // 질문 검색
-    searchQuestions: async (query: string): Promise<question.SearchAllQuestionResponse> => {
+    searchQuestions: async (query: string, page = 0, size = 10): Promise<question.SearchAllQuestionResponse> => {
         try {
             const response = await api.get("/api/questions", {
-                params: { query }
+                params: { query, page, size }
             });
             return response.data;
         } catch (error) {
@@ -30,9 +30,11 @@ export const questionService = {
     },
 
     // 카테고리별 질문 조회
-    searchQuestionByCategory: async (params: question.SearchQuestionByCategoryRequest): Promise<question.SearchQuestionByCategoryResponse> => {
+    searchQuestionByCategory: async (params: question.SearchQuestionByCategoryRequest, page = 0, size = 10): Promise<question.SearchQuestionByCategoryResponse> => {
         try {
-            const response = await api.post("/api/questions/search", params);
+            const response = await api.get("/api/questions/search", {
+                params: { ...params, page, size }
+            });
             return response.data;
         } catch (error) {
             throw handleApiError(error);
@@ -50,9 +52,19 @@ export const questionService = {
     },
 
     // 랜덤 질문 조회
-    randomlySelectInterviewQuestionByFilters: async (filters?: question.RandomlySelectInterviewQuestionByFiltersRequest): Promise<question.RandomlySelectInterviewQuestionByFiltersResponse> => {
+    randomlySelectInterviewQuestion: async (): Promise<question.RandomlySelectInterviewQuestionResponse> => {
         try {
-            const response = await api.post("/user/interviews/random/filter", filters);
+            const response = await api.get("/api/interviews/random");
+            return response.data;
+        } catch (error) {
+            throw handleApiError(error);
+        }
+    },
+
+    // 필터링된 랜덤 질문 조회
+    randomlySelectInterviewQuestionByFilters: async (filters: question.RandomlySelectInterviewQuestionByFiltersRequest): Promise<question.RandomlySelectInterviewQuestionByFiltersResponse> => {
+        try {
+            const response = await api.post("/api/interviews/random/filter", filters);
             return response.data;
         } catch (error) {
             throw handleApiError(error);
@@ -60,7 +72,7 @@ export const questionService = {
     },
 
     // 질문 등록 (관리자용)
-    registerSingleQuestion: async (data: question.RegisterSingleQuestionRequest): Promise<question.RegisterSingleQuestionResponse> => {
+    registerQuestions: async (data: question.RegisterQuestionRequest): Promise<question.RegisterQuestionResponse> => {
         try {
             const response = await api.post("/admin/questions", data);
             return response.data;
@@ -69,7 +81,7 @@ export const questionService = {
         }
     },
 
-    // 구글 시트로 질문 등록 (관리자용)
+    // Google Sheets로 질문 일괄 등록 (관리자용)
     registerMultipleQuestions: async (data: question.RegisterMultipleQuestionRequest): Promise<question.RegisterMultipleQuestionResponse> => {
         try {
             const response = await api.post("/admin/questions/sheets", data);
@@ -80,16 +92,26 @@ export const questionService = {
     },
 
     // 질문 수정 (관리자용)
-    editQuestion: async (data: question.EditQuestionRequest): Promise<question.EditQuestionResponse> => {
+    editQuestion: async (questionId: number, data: question.EditQuestionRequest): Promise<question.EditQuestionResponse> => {
         try {
-            const response = await api.put(`/admin/questions/${data.id}`, data);
+            const response = await api.patch(`/admin/questions/${questionId}`, data);
             return response.data;
         } catch (error) {
             throw handleApiError(error);
         }
     },
 
-    // 질문 삭제 (관리자용)
+    // 질문 단건 삭제 (관리자용)
+    deleteQuestion: async (questionId: number): Promise<question.DeleteQuestionResponse> => {
+        try {
+            const response = await api.delete(`/admin/questions/${questionId}`);
+            return response.data;
+        } catch (error) {
+            throw handleApiError(error);
+        }
+    },
+
+    // 질문 일괄 삭제 (관리자용)
     deleteMultipleQuestions: async (questionIds: number[]): Promise<question.DeleteMultipleQuestionResponse> => {
         try {
             const response = await api.delete("/admin/questions", {

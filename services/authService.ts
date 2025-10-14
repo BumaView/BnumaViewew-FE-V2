@@ -16,7 +16,7 @@ export const authService = {
     },
 
     // 로그인
-    login: async (data: auth.LoginRequest): Promise<auth.AuthResponse> => {
+    login: async (data: auth.LoginRequest): Promise<auth.LoginResponse> => {
         try {
             const response = await api.post("/api/auth/login", data);
             return response.data;
@@ -39,6 +39,16 @@ export const authService = {
     logout: async (data: auth.LogoutRequest): Promise<auth.LogoutResponse> => {
         try {
             const response = await api.post("/api/auth/logout", data);
+            return response.data;
+        } catch (error) {
+            throw handleApiError(error);
+        }
+    },
+
+    // 회원가입
+    register: async (data: auth.RegisterRequest): Promise<auth.RegisterResponse> => {
+        try {
+            const response = await api.post("/api/auth/register", data);
             return response.data;
         } catch (error) {
             throw handleApiError(error);

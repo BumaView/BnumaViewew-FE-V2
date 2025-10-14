@@ -6,7 +6,6 @@ export type MakeBookmarkedFolderRequest = {
 export type MakeBookmarkedFolderResponse = {
     folderId: number;
     name: string;
-    createdAt: string;
 };
 
 export type BookmarkingQuestionRequest = {
@@ -18,27 +17,24 @@ export type BookmarkingQuestionResponse = {
     bookmarkId: number;
     questionId: number;
     folderId: number;
-    createdAt: string;
 };
 
 export type GetBookmarkedFolderListResponse = {
-    folders: [
-        {
-            folderId: number;
-            name: string;
-            bookmarkCount: number;
-        }
-    ]
-};
+    folderId: number;
+    name: string;
+    bookmarks: {
+        bookmarkId: number;
+        questionId: number;
+        question: string;
+    }[];
+}[];
 
 export type GetBookmarkedQuestionsInFolderResponse = {
     folderId: number;
     name: string;
-    bookmarks: [
-        {
-            bookmarkId: number;
-            questionId: number;
-            title: string;
-        }
-    ]
+    bookmarks: {
+        bookmarkId: number;
+        questionId: number;
+        question: string;
+    }[];
 };

@@ -38,7 +38,8 @@ export type QuestionDetail = {
 };
 
 export type PaginatedResponse<T> = {
-    questions: T[];
+    content: T[]; // 백엔드 응답 구조에 맞게 content 사용
+    questions?: T[]; // 하위 호환성을 위해 questions도 유지
     pageable: Pageable;
     last: boolean;
     totalPages: number;

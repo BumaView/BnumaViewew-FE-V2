@@ -46,7 +46,7 @@ const PracticePage = () => {
         response = await questionService.searchAllQuestions(0, 100);
       }
       
-      let questions = response.questions || [];
+      let questions = response.content || [];
       
       // 클라이언트 사이드 필터링 (회사, 연도, 카테고리)
       if (filters.company) {

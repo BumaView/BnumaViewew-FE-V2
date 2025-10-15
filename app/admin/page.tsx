@@ -45,8 +45,10 @@ const AdminPage = () => {
         const data = await questionService.searchAllQuestions(0, 100);
         console.log('Questions data from API:', data);
         
-        // 안전하게 questions 배열 추출
-        if (data && Array.isArray(data.questions)) {
+        // 안전하게 questions 배열 추출 (백엔드 응답 구조에 맞게 수정)
+        if (data && Array.isArray(data.content)) {
+          setQuestions(data.content);
+        } else if (data && Array.isArray(data.questions)) {
           setQuestions(data.questions);
         } else if (Array.isArray(data)) {
           // 만약 data가 직접 배열이라면
@@ -92,7 +94,9 @@ const AdminPage = () => {
       
       // 목록 새로고침
       const data = await questionService.searchAllQuestions(0, 100);
-      if (data && Array.isArray(data.questions)) {
+      if (data && Array.isArray(data.content)) {
+        setQuestions(data.content);
+      } else if (data && Array.isArray(data.questions)) {
         setQuestions(data.questions);
       } else if (Array.isArray(data)) {
         setQuestions(data);
@@ -124,7 +128,9 @@ const AdminPage = () => {
       
       // 목록 새로고침
       const data = await questionService.searchAllQuestions(0, 100);
-      if (data && Array.isArray(data.questions)) {
+      if (data && Array.isArray(data.content)) {
+        setQuestions(data.content);
+      } else if (data && Array.isArray(data.questions)) {
         setQuestions(data.questions);
       } else if (Array.isArray(data)) {
         setQuestions(data);
@@ -157,7 +163,13 @@ const AdminPage = () => {
       
       // 목록 새로고침
       const data = await questionService.searchAllQuestions(0, 100);
-      setQuestions(data.questions);
+      if (data && Array.isArray(data.content)) {
+        setQuestions(data.content);
+      } else if (data && Array.isArray(data.questions)) {
+        setQuestions(data.questions);
+      } else if (Array.isArray(data)) {
+        setQuestions(data);
+      }
       
       alert('질문이 삭제되었습니다.');
     } catch (error) {
@@ -177,7 +189,13 @@ const AdminPage = () => {
       
       // 목록 새로고침
       const data = await questionService.searchAllQuestions(0, 100);
-      setQuestions(data.questions);
+      if (data && Array.isArray(data.content)) {
+        setQuestions(data.content);
+      } else if (data && Array.isArray(data.questions)) {
+        setQuestions(data.questions);
+      } else if (Array.isArray(data)) {
+        setQuestions(data);
+      }
       
       alert('선택한 질문들이 삭제되었습니다.');
     } catch (error) {

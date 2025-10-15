@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { signIn } from 'next-auth/react';
+import { signIn, getSession } from 'next-auth/react';
 import { authService } from '@/services/authService';
 
 const LoginPage = () => {
@@ -85,6 +85,14 @@ const LoginPage = () => {
       }
       
       if (result?.ok) {
+        // NextAuth 세션에서 토큰을 가져와서 localStorage에 저장
+        const session = await getSession();
+        if (session?.accessToken && session?.refreshToken) {
+          localStorage.setItem('accessToken', session.accessToken);
+          localStorage.setItem('refreshToken', session.refreshToken);
+          console.log('Google login tokens saved to localStorage');
+        }
+        
         // 성공적으로 로그인된 경우 대시보드로 리다이렉션
         router.push('/dashboard');
       }

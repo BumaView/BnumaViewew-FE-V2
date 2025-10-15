@@ -25,8 +25,14 @@ api.interceptors.request.use(
         // 클라이언트 사이드에서만 localStorage 접근
         if (typeof window !== 'undefined') {
             const token = localStorage.getItem("accessToken");
+            console.log('Token found:', token ? 'Yes' : 'No');
+            console.log('Token value:', token ? `${token.substring(0, 20)}...` : 'None');
+            
             if (token) {
                 config.headers.Authorization = `Bearer ${token}`;
+                console.log('Authorization header set:', config.headers.Authorization);
+            } else {
+                console.warn('No access token found in localStorage');
             }
         }
         return config;

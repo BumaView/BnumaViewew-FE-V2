@@ -17,9 +17,15 @@ export const sessionService = {
     // 모의면접 생성
     createMockInterview: async (data: session.CreateMockInterviewRequest): Promise<session.CreateMockInterviewResponse> => {
         try {
+            console.log('Creating mock interview with data:', data);
+            console.log('Request URL:', '/user/interviews');
+            console.log('Request method:', 'POST');
+            
             const response = await api.post("/user/interviews", data);
+            console.log('Mock interview created successfully:', response.data);
             return response.data;
         } catch (error) {
+            console.error('Create mock interview error:', error);
             throw handleApiError(error);
         }
     },

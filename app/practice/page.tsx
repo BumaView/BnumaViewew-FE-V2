@@ -358,7 +358,7 @@ const PracticePage = () => {
                   placeholder="카테고리"
                   value={advancedFilters.category}
                   onChange={(e) => setAdvancedFilters(prev => ({ ...prev, category: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-sm text-sm focus:outline-none focus:border-gray-400"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-sm text-black text-sm focus:outline-none focus:border-gray-400"
                 />
               </div>
               <div>
@@ -368,7 +368,7 @@ const PracticePage = () => {
                   placeholder="회사명"
                   value={advancedFilters.company}
                   onChange={(e) => setAdvancedFilters(prev => ({ ...prev, company: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-sm text-sm focus:outline-none focus:border-gray-400"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-sm text-black text-sm focus:outline-none focus:border-gray-400"
                 />
               </div>
               <div>
@@ -378,7 +378,7 @@ const PracticePage = () => {
                   placeholder="연도"
                   value={advancedFilters.year || ''}
                   onChange={(e) => setAdvancedFilters(prev => ({ ...prev, year: parseInt(e.target.value) || 0 }))}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-sm text-sm focus:outline-none focus:border-gray-400"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-sm text-black text-sm focus:outline-none focus:border-gray-400"
                 />
               </div>
             </div>
@@ -421,7 +421,7 @@ const PracticePage = () => {
                 placeholder="제목이나 내용으로 검색"
                 value={filters.search}
                 onChange={(e) => handleFilterChange('search', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-sm text-sm focus:outline-none focus:border-gray-400"
+                className="w-full px-3 py-2 border border-gray-200 rounded-sm text-black text-sm focus:outline-none focus:border-gray-400"
               />
             </div>
             <div>
@@ -431,7 +431,7 @@ const PracticePage = () => {
                 placeholder="회사명"
                 value={filters.company}
                 onChange={(e) => handleFilterChange('company', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-sm text-sm focus:outline-none focus:border-gray-400"
+                className="w-full px-3 py-2 border border-gray-200 rounded-sm text-black text-sm focus:outline-none focus:border-gray-400"
               />
             </div>
             <div>
@@ -441,7 +441,7 @@ const PracticePage = () => {
                 placeholder="연도"
                 value={filters.year}
                 onChange={(e) => handleFilterChange('year', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-sm text-sm focus:outline-none focus:border-gray-400"
+                className="w-full px-3 py-2 border border-gray-200 rounded-sm text-black text-sm focus:outline-none focus:border-gray-400"
               />
             </div>
             <div>
@@ -449,7 +449,7 @@ const PracticePage = () => {
               <select
                 value={filters.category}
                 onChange={(e) => handleFilterChange('category', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-sm text-sm focus:outline-none focus:border-gray-400"
+                className="w-full px-3 py-2 border border-gray-200 rounded-sm text-black text-sm focus:outline-none focus:border-gray-400"
               >
                 <option value="">전체</option>
                 <option value="기술면접">기술면접</option>

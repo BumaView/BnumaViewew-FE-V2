@@ -1,6 +1,6 @@
 import NextAuth, { AuthOptions } from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
-import { userDb, tokenUtils } from '@/lib/db'
+import { authService } from '@/services/authService'
 
 export const authOptions: AuthOptions = {
   providers: [
@@ -15,32 +15,18 @@ export const authOptions: AuthOptions = {
         try {
           console.log('Google sign in attempt:', { user, account })
           
-          // 구글 사용자 정보로 데이터베이스에서 사용자 찾기 또는 생성
-          let dbUser = await userDb.findByGoogleId(account.providerAccountId)
+          // 백엔드 API를 통한 구글 로그인
+          const response = await authService.googleLogin({
+            authorizationCode: account.access_token || '',
+            role: 'User'
+          })
           
-          if (!dbUser) {
-            // 새 사용자 생성
-            console.log('Creating new user:', user.email)
-            dbUser = await userDb.create({
-              email: user.email!,
-              username: user.email!.split('@')[0],
-              name: user.name || user.email!.split('@')[0],
-              userType: 'USER',
-              googleId: account.providerAccountId,
-              image: user.image || undefined
-            })
-          } else {
-            // 기존 사용자 정보 업데이트
-            console.log('Updating existing user:', dbUser.id)
-            dbUser = await userDb.update(dbUser.id, {
-              name: user.name || dbUser.name || undefined,
-              image: user.image || dbUser.image || undefined
-            })
+          // 사용자 정보를 user 객체에 저장
+          if ('accessToken' in response) {
+            user.accessToken = response.accessToken
+            user.refreshToken = response.refreshToken
+            user.id = response.userId?.toString() || '1'
           }
-          
-          // 사용자 ID를 user 객체에 저장
-          user.id = dbUser.id.toString()
-          console.log('User ID set:', user.id)
           
           return true
         } catch (error) {
@@ -60,20 +46,13 @@ export const authOptions: AuthOptions = {
         token.email = user.email || undefined
         token.image = user.image || undefined
         
-        // JWT 토큰 생성
-        const accessToken = tokenUtils.generateAccessToken({
-          id: Number(user.id),
-          email: user.email!,
-          userType: 'USER'
-        })
-        
-        const refreshToken = tokenUtils.generateRefreshToken({
-          id: Number(user.id),
-          email: user.email!
-        })
-        
-        token.accessToken = accessToken
-        token.refreshToken = refreshToken
+        // 백엔드에서 받은 토큰들을 저장
+        if (user.accessToken) {
+          token.accessToken = user.accessToken
+        }
+        if (user.refreshToken) {
+          token.refreshToken = user.refreshToken
+        }
       }
       return token
     },

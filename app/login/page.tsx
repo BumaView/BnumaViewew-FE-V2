@@ -45,8 +45,18 @@ const LoginPage = () => {
 
       // 대시보드로 리다이렉트
       router.push('/dashboard');
-    } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : '로그인에 실패했습니다.');
+    } catch (error: any) {
+      console.error('Login error:', error);
+      
+      if (error.response?.status === 403) {
+        setError('백엔드 서버에 접근할 수 없습니다. 잠시 후 다시 시도해주세요.');
+      } else if (error.response?.status === 401) {
+        setError('아이디 또는 비밀번호가 올바르지 않습니다.');
+      } else if (error.response?.data?.message) {
+        setError(error.response.data.message);
+      } else {
+        setError('로그인에 실패했습니다. 네트워크 연결을 확인해주세요.');
+      }
     } finally {
       setIsLoading(false);
     }

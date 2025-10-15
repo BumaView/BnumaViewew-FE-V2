@@ -40,6 +40,8 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     (response) => response,
     (error) => {
+        console.error('API Error:', error.response?.data || error.message);
+        
         if (error.response?.status === 401) {
             // 클라이언트 사이드에서만 localStorage 접근
             if (typeof window !== 'undefined') {
@@ -48,6 +50,11 @@ api.interceptors.response.use(
                 window.location.href = "/login";
             }
         }
+        
+        if (error.response?.status === 403) {
+            console.error('403 Forbidden - 백엔드 API 접근 권한이 없습니다.');
+        }
+        
         return Promise.reject(error);
     }
 );

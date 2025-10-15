@@ -78,7 +78,7 @@ const OnboardingPage = () => {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${BaseURL}/api/profile/update`, {
+      const response = await fetch(`${BaseURL}/user/profile`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

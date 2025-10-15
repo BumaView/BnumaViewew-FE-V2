@@ -28,7 +28,7 @@ export const bookmarkService = {
     // 북마크 폴더 생성
     makeBookmarkedFolder: async (data: bookmark.MakeBookmarkedFolderRequest): Promise<bookmark.MakeBookmarkedFolderResponse> => {
         try {
-            const response = await api.post("/user/bookmarks/forders", data);
+            const response = await api.post("/user/bookmarks/folders", data);
             return response.data;
         } catch (error) {
             throw handleApiError(error);

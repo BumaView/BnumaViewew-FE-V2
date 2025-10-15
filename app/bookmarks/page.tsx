@@ -64,6 +64,14 @@ const BookmarksPage = () => {
 
     setIsCreatingFolder(true);
     try {
+      // 토큰 확인
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        alert('로그인이 필요합니다. 로그인 페이지로 이동합니다.');
+        router.push('/login');
+        return;
+      }
+
       await bookmarkService.makeBookmarkedFolder({
         name: folderName.trim()
       });
@@ -73,7 +81,20 @@ const BookmarksPage = () => {
       setShowCreateFolder(false);
     } catch (error: unknown) {
       console.error('Create folder error:', error);
-      alert(error instanceof Error ? error.message : '폴더 생성에 실패했습니다.');
+      
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { status?: number } };
+        if (axiosError.response?.status === 403) {
+          alert('백엔드 서버에 접근할 수 없습니다. 잠시 후 다시 시도해주세요.');
+        } else if (axiosError.response?.status === 401) {
+          alert('로그인이 만료되었습니다. 다시 로그인해주세요.');
+          router.push('/login');
+        } else {
+          alert('폴더 생성에 실패했습니다. 네트워크 연결을 확인해주세요.');
+        }
+      } else {
+        alert('폴더 생성에 실패했습니다.');
+      }
     } finally {
       setIsCreatingFolder(false);
     }
@@ -188,7 +209,7 @@ const BookmarksPage = () => {
                     value={folderName}
                     onChange={(e) => setFolderName(e.target.value)}
                     required
-                    className="w-full px-2 py-1 border border-gray-200 rounded text-sm mb-2 focus:outline-none focus:border-gray-400"
+                    className="w-full px-2 py-1 border border-gray-200 rounded text-black text-sm mb-2 focus:outline-none focus:border-gray-400"
                   />
                   <div className="flex gap-2">
                     <button

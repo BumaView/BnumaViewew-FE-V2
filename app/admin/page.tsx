@@ -14,6 +14,9 @@ const AdminPage = () => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [showBulkForm, setShowBulkForm] = useState(false);
   const [newQuestion, setNewQuestion] = useState('');
+  const [questionCompany, setQuestionCompany] = useState('');
+  const [questionYear, setQuestionYear] = useState('');
+  const [questionCategory, setQuestionCategory] = useState('');
   const [googleSheetUrl, setGoogleSheetUrl] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedQuestions, setSelectedQuestions] = useState<number[]>([]);
@@ -66,15 +69,25 @@ const AdminPage = () => {
   }, [router]);
 
   const handleAddQuestion = async () => {
-    if (!newQuestion.trim()) return;
+    if (!newQuestion.trim() || !questionCompany.trim() || !questionYear.trim() || !questionCategory.trim()) {
+      alert('모든 필드를 입력해주세요.');
+      return;
+    }
 
     setIsSubmitting(true);
     try {
+      // 백엔드 API가 확장된 필드를 지원할 때까지 기본 q 필드만 전송
       await questionService.registerQuestions({
-        questions: [{ q: newQuestion }]
-      });
+        questions: [{ 
+          q: `${newQuestion} [${questionCompany}, ${questionYear}, ${questionCategory}]`
+        }]
+      } as question.RegisterQuestionRequest);
       
+      // 폼 초기화
       setNewQuestion('');
+      setQuestionCompany('');
+      setQuestionYear('');
+      setQuestionCategory('');
       setShowAddForm(false);
       
       // 목록 새로고침
@@ -218,11 +231,14 @@ const AdminPage = () => {
         {/* 질문 등록 폼 */}
         {showAddForm && (
           <div className="bg-white rounded-sm border border-gray-100 p-6 mb-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">질문 등록</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">질문 등록</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              회사, 연도, 카테고리 정보는 질문 내용에 함께 저장됩니다.
+            </p>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  질문 내용
+                  질문 내용 *
                 </label>
                 <textarea
                   value={newQuestion}
@@ -232,6 +248,58 @@ const AdminPage = () => {
                   rows={3}
                 />
               </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    회사 *
+                  </label>
+                  <input
+                    type="text"
+                    value={questionCompany}
+                    onChange={(e) => setQuestionCompany(e.target.value)}
+                    placeholder="예: 네이버, 카카오, 삼성..."
+                    className="w-full px-3 py-2 border border-gray-200 rounded-sm text-sm focus:outline-none focus:border-gray-400"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    연도 *
+                  </label>
+                  <input
+                    type="number"
+                    value={questionYear}
+                    onChange={(e) => setQuestionYear(e.target.value)}
+                    placeholder="예: 2024"
+                    min="2000"
+                    max="2030"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-sm text-sm focus:outline-none focus:border-gray-400"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    카테고리 *
+                  </label>
+                  <select
+                    value={questionCategory}
+                    onChange={(e) => setQuestionCategory(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-sm text-sm focus:outline-none focus:border-gray-400"
+                  >
+                    <option value="">카테고리 선택</option>
+                    <option value="프론트엔드">프론트엔드</option>
+                    <option value="백엔드">백엔드</option>
+                    <option value="데이터베이스">데이터베이스</option>
+                    <option value="네트워크">네트워크</option>
+                    <option value="운영체제">운영체제</option>
+                    <option value="자료구조">자료구조</option>
+                    <option value="알고리즘">알고리즘</option>
+                    <option value="기타">기타</option>
+                  </select>
+                </div>
+              </div>
+              
               <div className="flex justify-end space-x-3">
                 <button
                   onClick={() => setShowAddForm(false)}
@@ -241,7 +309,7 @@ const AdminPage = () => {
                 </button>
                 <button
                   onClick={handleAddQuestion}
-                  disabled={isSubmitting || !newQuestion.trim()}
+                  disabled={isSubmitting || !newQuestion.trim() || !questionCompany.trim() || !questionYear.trim() || !questionCategory.trim()}
                   className="bg-blue-600 text-white px-4 py-2 rounded-sm text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? '등록 중...' : '등록'}
@@ -265,7 +333,7 @@ const AdminPage = () => {
                   value={googleSheetUrl}
                   onChange={(e) => setGoogleSheetUrl(e.target.value)}
                   placeholder="https://docs.google.com/spreadsheets/..."
-                  className="w-full px-3 py-2 border border-gray-200 rounded-sm text-sm focus:outline-none focus:border-gray-400"
+                  className="w-full px-3 py-2 border border-gray-200 text-black rounded-sm text-sm focus:outline-none focus:border-gray-400"
                 />
               </div>
               <div className="flex justify-end space-x-3">

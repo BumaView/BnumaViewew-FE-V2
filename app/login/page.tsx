@@ -58,10 +58,20 @@ const LoginPage = () => {
       setError('');
       
       // NextAuth의 기본 리다이렉션을 사용
-      await signIn('google', {
-        redirect: true,
+      const result = await signIn('google', {
+        redirect: false,
         callbackUrl: '/dashboard'
       });
+      
+      if (result?.error) {
+        setError('Google 로그인에 실패했습니다.');
+        return;
+      }
+      
+      if (result?.ok) {
+        // 성공적으로 로그인된 경우 대시보드로 리다이렉션
+        router.push('/dashboard');
+      }
     } catch (error) {
       console.error('Google login error:', error);
       setError('Google 로그인 중 오류가 발생했습니다.');

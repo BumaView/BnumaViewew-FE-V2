@@ -13,11 +13,14 @@ export const authOptions: AuthOptions = {
     async signIn({ user, account }) {
       if (account?.provider === 'google') {
         try {
+          console.log('Google sign in attempt:', { user, account })
+          
           // 구글 사용자 정보로 데이터베이스에서 사용자 찾기 또는 생성
           let dbUser = await userDb.findByGoogleId(account.providerAccountId)
           
           if (!dbUser) {
             // 새 사용자 생성
+            console.log('Creating new user:', user.email)
             dbUser = await userDb.create({
               email: user.email!,
               username: user.email!.split('@')[0],
@@ -28,6 +31,7 @@ export const authOptions: AuthOptions = {
             })
           } else {
             // 기존 사용자 정보 업데이트
+            console.log('Updating existing user:', dbUser.id)
             dbUser = await userDb.update(dbUser.id, {
               name: user.name || dbUser.name || undefined,
               image: user.image || dbUser.image || undefined
@@ -36,6 +40,7 @@ export const authOptions: AuthOptions = {
           
           // 사용자 ID를 user 객체에 저장
           user.id = dbUser.id.toString()
+          console.log('User ID set:', user.id)
           
           return true
         } catch (error) {
@@ -87,8 +92,30 @@ export const authOptions: AuthOptions = {
     },
     async redirect({ url, baseUrl }) {
       // 구글 로그인 후 리다이렉션 처리
-      if (url.startsWith("/")) return `${baseUrl}${url}`
-      else if (new URL(url).origin === baseUrl) return url
+      console.log('Redirect callback:', { url, baseUrl })
+      
+      // URL이 없거나 기본 URL인 경우 대시보드로 리다이렉션
+      if (!url || url === baseUrl || url === `${baseUrl}/`) {
+        return `${baseUrl}/dashboard`
+      }
+      
+      // URL이 상대 경로인 경우
+      if (url.startsWith("/")) {
+        return `${baseUrl}${url}`
+      }
+      
+      // URL이 같은 도메인인 경우
+      try {
+        const urlObj = new URL(url)
+        const baseUrlObj = new URL(baseUrl)
+        if (urlObj.origin === baseUrlObj.origin) {
+          return url
+        }
+      } catch (error) {
+        console.error('URL parsing error:', error)
+      }
+      
+      // 기본적으로 대시보드로 리다이렉션
       return `${baseUrl}/dashboard`
     }
   },

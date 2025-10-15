@@ -140,6 +140,17 @@ const PracticePage = () => {
     }
   }, [filters, loadQuestions, isLoading]);
 
+  // 페이지 포커스 시 북마크 목록 다시 로드
+  useEffect(() => {
+    const handleFocus = () => {
+      console.log('Page focused, reloading bookmarks...');
+      loadBookmarks();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, []);
+
   const handleFilterChange = (key: string, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
   };
@@ -165,7 +176,7 @@ const PracticePage = () => {
     try {
       console.log('Starting random interview...');
       
-      // 토큰 확인
+      // 토큰 확인 및 유효성 검사
       const token = localStorage.getItem('accessToken');
       if (!token) {
         alert('로그인이 필요합니다. 로그인 페이지로 이동합니다.');
@@ -173,8 +184,11 @@ const PracticePage = () => {
         return;
       }
       
+      console.log('Token found, attempting to get random question...');
+      
       // 백엔드 API를 사용하여 랜덤 질문 가져오기
-      await questionService.randomlySelectInterviewQuestion();
+      const randomQuestion = await questionService.randomlySelectInterviewQuestion();
+      console.log('Random question received:', randomQuestion);
       
       // 랜덤 질문으로 면접 세션 생성
       const sessionData = await sessionService.createMockInterview({
@@ -191,9 +205,17 @@ const PracticePage = () => {
       if (error && typeof error === 'object' && 'response' in error) {
         const axiosError = error as { response?: { status?: number } };
         if (axiosError.response?.status === 403) {
-          alert('백엔드 서버에 접근할 수 없습니다. 잠시 후 다시 시도해주세요.');
+          alert('API 접근 권한이 없습니다. 로그인을 다시 시도해주세요.');
+          // 토큰 제거 후 로그인 페이지로 이동
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('userInfo');
+          router.push('/login');
         } else if (axiosError.response?.status === 401) {
           alert('로그인이 만료되었습니다. 다시 로그인해주세요.');
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('userInfo');
           router.push('/login');
         } else {
           alert('면접 시작에 실패했습니다. 네트워크 연결을 확인해주세요.');
@@ -252,7 +274,7 @@ const PracticePage = () => {
     try {
       console.log('Starting advanced random interview with filters:', advancedFilters);
       
-      // 토큰 확인
+      // 토큰 확인 및 유효성 검사
       const token = localStorage.getItem('accessToken');
       if (!token) {
         alert('로그인이 필요합니다. 로그인 페이지로 이동합니다.');
@@ -260,12 +282,15 @@ const PracticePage = () => {
         return;
       }
       
+      console.log('Token found, attempting to get filtered random question...');
+      
       // 백엔드 API를 사용하여 필터링된 랜덤 질문 가져오기
-      await questionService.randomlySelectInterviewQuestionByFilters({
+      const filteredQuestion = await questionService.randomlySelectInterviewQuestionByFilters({
         category: advancedFilters.category,
         company: advancedFilters.company,
         year: advancedFilters.year
       });
+      console.log('Filtered question received:', filteredQuestion);
       
       // 랜덤 질문으로 면접 세션 생성
       const sessionData = await sessionService.createMockInterview({
@@ -282,9 +307,17 @@ const PracticePage = () => {
       if (error && typeof error === 'object' && 'response' in error) {
         const axiosError = error as { response?: { status?: number } };
         if (axiosError.response?.status === 403) {
-          alert('백엔드 서버에 접근할 수 없습니다. 잠시 후 다시 시도해주세요.');
+          alert('API 접근 권한이 없습니다. 로그인을 다시 시도해주세요.');
+          // 토큰 제거 후 로그인 페이지로 이동
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('userInfo');
+          router.push('/login');
         } else if (axiosError.response?.status === 401) {
           alert('로그인이 만료되었습니다. 다시 로그인해주세요.');
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('userInfo');
           router.push('/login');
         } else {
           alert('면접 시작에 실패했습니다. 네트워크 연결을 확인해주세요.');
@@ -323,29 +356,33 @@ const PracticePage = () => {
             const bookmark = folder.bookmarks.find(b => b.questionId === questionId);
             if (bookmark) {
               await bookmarkService.unbookmarkingQuestion(bookmark.bookmarkId);
+              console.log(`Removed bookmark for question ${questionId}`);
               break;
             }
           }
-          
-          setBookmarkedQuestions(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(questionId);
-            return newSet;
-          });
         } catch (error) {
           console.error('Error removing bookmark:', error);
-          // 에러 발생 시 전체 북마크 목록 다시 로드
-          await loadBookmarks();
+          alert('북마크 제거에 실패했습니다.');
+          return;
         }
       } else {
         // 북마크 추가 - 기본 폴더에 추가
-        await bookmarkService.bookmarkingQuestion({
-          questionId: questionId,
-          folderId: 1 // 기본 폴더 ID
-        });
-        setBookmarkedQuestions(prev => new Set([...prev, questionId]));
-        console.log(`Bookmarked question ${questionId}`);
+        try {
+          await bookmarkService.bookmarkingQuestion({
+            questionId: questionId,
+            folderId: 1 // 기본 폴더 ID
+          });
+          console.log(`Added bookmark for question ${questionId}`);
+        } catch (error) {
+          console.error('Error adding bookmark:', error);
+          alert('북마크 추가에 실패했습니다.');
+          return;
+        }
       }
+      
+      // 북마크 추가/제거 후 전체 북마크 목록 다시 로드
+      await loadBookmarks();
+      
     } catch (error) {
       console.error('Bookmark toggle error:', error);
       alert('북마크 처리 중 오류가 발생했습니다.');

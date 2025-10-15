@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import { dashboardService } from '@/services/dashboardService';
@@ -26,35 +26,48 @@ const DashboardPage = () => {
     router.push('/materials');
   };
 
+  const loadDashboardData = useCallback(async () => {
+    // localStorage에서 토큰 확인
+    const accessToken = localStorage.getItem('accessToken');
+    
+    if (!accessToken) {
+      router.push('/login');
+      return;
+    }
+
+    // localStorage에서 사용자 정보 가져오기
+    const storedUserInfo = localStorage.getItem('userInfo');
+    if (storedUserInfo) {
+      setUserInfo(JSON.parse(storedUserInfo));
+    }
+
+    try {
+      console.log('Loading dashboard data...');
+      const data = await dashboardService.getDashboard();
+      console.log('Dashboard data:', data);
+      setDashboardData(data);
+    } catch (error) {
+      console.error('Dashboard load error:', error);
+      router.push('/login');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [router]);
+
   useEffect(() => {
-    const loadDashboardData = async () => {
-      // localStorage에서 토큰 확인
-      const accessToken = localStorage.getItem('accessToken');
-      
-      if (!accessToken) {
-        router.push('/login');
-        return;
-      }
+    loadDashboardData();
+  }, [loadDashboardData]);
 
-      // localStorage에서 사용자 정보 가져오기
-      const storedUserInfo = localStorage.getItem('userInfo');
-      if (storedUserInfo) {
-        setUserInfo(JSON.parse(storedUserInfo));
-      }
-
-      try {
-        const data = await dashboardService.getDashboard();
-        setDashboardData(data);
-      } catch (error) {
-        console.error('Dashboard load error:', error);
-        router.push('/login');
-      } finally {
-        setIsLoading(false);
-      }
+  // 페이지 포커스 시 대시보드 데이터 다시 로드
+  useEffect(() => {
+    const handleFocus = () => {
+      console.log('Page focused, reloading dashboard data...');
+      loadDashboardData();
     };
 
-    loadDashboardData();
-  }, [router]);
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [loadDashboardData]);
 
   if (isLoading) {
     return (

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { bookmarkService } from '@/services/bookmarkService';
@@ -19,49 +19,60 @@ const BookmarksPage = () => {
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const router = useRouter();
 
-  useEffect(() => {
-    const loadData = async () => {
-      // localStorage에서 토큰 확인
-      const accessToken = localStorage.getItem('accessToken');
+  const loadBookmarkData = useCallback(async () => {
+    // localStorage에서 토큰 확인
+    const accessToken = localStorage.getItem('accessToken');
+    
+    if (!accessToken) {
+      router.push('/login');
+      return;
+    }
+
+    // localStorage에서 사용자 정보 가져오기
+    const storedUserInfo = localStorage.getItem('userInfo');
+    if (storedUserInfo) {
+      setUserInfo(JSON.parse(storedUserInfo));
+    }
+
+    try {
+      console.log('Loading bookmark folders...');
+      const response = await bookmarkService.getBookmarkFolders();
+      console.log('Bookmark folders response:', response);
       
-      if (!accessToken) {
-        router.push('/login');
-        return;
+      // 백엔드 응답 구조에 따라 처리
+      let foldersData: bookmark.GetBookmarkedFolderListResponse;
+      if (Array.isArray(response)) {
+        foldersData = response;
+      } else if (response && 'content' in response) {
+        foldersData = response.content;
+      } else {
+        console.error('Unexpected bookmarks response structure:', response);
+        foldersData = [];
       }
+      
+      setFolders(foldersData);
+    } catch (error) {
+      console.error('Load data error:', error);
+      router.push('/login');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [router]);
 
-      // localStorage에서 사용자 정보 가져오기
-      const storedUserInfo = localStorage.getItem('userInfo');
-      if (storedUserInfo) {
-        setUserInfo(JSON.parse(storedUserInfo));
-      }
+  useEffect(() => {
+    loadBookmarkData();
+  }, [loadBookmarkData]);
 
-      try {
-        console.log('Loading bookmark folders...');
-        const response = await bookmarkService.getBookmarkFolders();
-        console.log('Bookmark folders response:', response);
-        
-        // 백엔드 응답 구조에 따라 처리
-        let foldersData: bookmark.GetBookmarkedFolderListResponse;
-        if (Array.isArray(response)) {
-          foldersData = response;
-        } else if (response && 'content' in response) {
-          foldersData = response.content;
-        } else {
-          console.error('Unexpected bookmarks response structure:', response);
-          foldersData = [];
-        }
-        
-        setFolders(foldersData);
-      } catch (error) {
-        console.error('Load data error:', error);
-        router.push('/login');
-      } finally {
-        setIsLoading(false);
-      }
+  // 페이지 포커스 시 북마크 목록 다시 로드
+  useEffect(() => {
+    const handleFocus = () => {
+      console.log('Page focused, reloading bookmarks...');
+      loadBookmarkData();
     };
 
-    loadData();
-  }, [router]);
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [loadBookmarkData]);
 
   const loadFolders = async () => {
     try {

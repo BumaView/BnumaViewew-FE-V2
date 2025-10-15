@@ -41,6 +41,9 @@ api.interceptors.response.use(
     (response) => response,
     (error) => {
         console.error('API Error:', error.response?.data || error.message);
+        console.error('Error Status:', error.response?.status);
+        console.error('Error Headers:', error.response?.headers);
+        console.error('Full Error Object:', error);
         
         if (error.response?.status === 401) {
             // 클라이언트 사이드에서만 localStorage 접근
@@ -53,6 +56,9 @@ api.interceptors.response.use(
         
         if (error.response?.status === 403) {
             console.error('403 Forbidden - 백엔드 API 접근 권한이 없습니다.');
+            console.error('Response Data:', error.response?.data);
+            console.error('Request URL:', error.config?.url);
+            console.error('Request Method:', error.config?.method);
         }
         
         return Promise.reject(error);

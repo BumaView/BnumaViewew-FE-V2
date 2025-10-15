@@ -54,7 +54,7 @@ export const questionService = {
     // 랜덤 질문 조회
     randomlySelectInterviewQuestion: async (): Promise<question.RandomlySelectInterviewQuestionResponse> => {
         try {
-            const response = await api.get("/user/interviews/random");
+            const response = await api.get("/user/interviews");
             return response.data;
         } catch (error) {
             throw handleApiError(error);
@@ -64,7 +64,7 @@ export const questionService = {
     // 필터링된 랜덤 질문 조회
     randomlySelectInterviewQuestionByFilters: async (filters: question.RandomlySelectInterviewQuestionByFiltersRequest): Promise<question.RandomlySelectInterviewQuestionByFiltersResponse> => {
         try {
-            const response = await api.post("/user/interviews/random/filter", filters);
+            const response = await api.post("/user/interviews", filters);
             return response.data;
         } catch (error) {
             throw handleApiError(error);

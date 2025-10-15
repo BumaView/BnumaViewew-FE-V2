@@ -36,7 +36,21 @@ const BookmarksPage = () => {
       }
 
       try {
-        const foldersData = await bookmarkService.getBookmarkFolders();
+        console.log('Loading bookmark folders...');
+        const response = await bookmarkService.getBookmarkFolders();
+        console.log('Bookmark folders response:', response);
+        
+        // 백엔드 응답 구조에 따라 처리
+        let foldersData: bookmark.GetBookmarkedFolderListResponse;
+        if (Array.isArray(response)) {
+          foldersData = response;
+        } else if (response && 'content' in response) {
+          foldersData = response.content;
+        } else {
+          console.error('Unexpected bookmarks response structure:', response);
+          foldersData = [];
+        }
+        
         setFolders(foldersData);
       } catch (error) {
         console.error('Load data error:', error);
@@ -126,14 +140,26 @@ const BookmarksPage = () => {
 
   const getFilteredBookmarks = () => {
     if (selectedFolder === null) {
-      return folders.flatMap(folder => folder.bookmarks);
+      // folders가 배열인지 확인하고 flatMap 사용
+      if (Array.isArray(folders)) {
+        return folders.flatMap(folder => folder.bookmarks);
+      } else {
+        return [];
+      }
     }
-    const folder = folders.find(f => f.folderId === selectedFolder);
-    return folder ? folder.bookmarks : [];
+    // folders가 배열인지 확인하고 find 사용
+    if (Array.isArray(folders)) {
+      const folder = folders.find(f => f.folderId === selectedFolder);
+      return folder ? folder.bookmarks : [];
+    }
+    return [];
   };
 
   const getTotalBookmarkCount = () => {
-    return folders.reduce((total, folder) => total + folder.bookmarks.length, 0);
+    if (Array.isArray(folders)) {
+      return folders.reduce((total, folder) => total + folder.bookmarks.length, 0);
+    }
+    return 0;
   };
 
   if (isLoading) {
@@ -249,7 +275,7 @@ const BookmarksPage = () => {
                 </button>
 
 
-                {folders.map((folder) => (
+                {Array.isArray(folders) && folders.map((folder) => (
                   <button
                     key={folder.folderId}
                     onClick={() => setSelectedFolder(folder.folderId)}
@@ -277,7 +303,9 @@ const BookmarksPage = () => {
                 <h1 className="text-2xl font-light text-gray-900 mb-2">
                   {selectedFolder === null 
                     ? '전체 북마크'
-                    : folders.find(f => f.folderId === selectedFolder)?.name || '북마크'
+                    : Array.isArray(folders) 
+                      ? folders.find(f => f.folderId === selectedFolder)?.name || '북마크'
+                      : '북마크'
                   }
                 </h1>
                 <p className="text-gray-600">

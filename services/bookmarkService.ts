@@ -8,9 +8,12 @@ export const bookmarkService = {
     // 북마크 폴더 목록 조회
     getBookmarkFolders: async (): Promise<bookmark.GetBookmarkedFolderListResponse> => {
         try {
+            console.log('Fetching bookmark folders...');
             const response = await api.get("/user/bookmarks");
+            console.log('Bookmark folders response:', response.data);
             return response.data;
         } catch (error) {
+            console.error('Get bookmark folders error:', error);
             throw handleApiError(error);
         }
     },

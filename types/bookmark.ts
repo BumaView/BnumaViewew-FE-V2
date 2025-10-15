@@ -27,7 +27,17 @@ export type GetBookmarkedFolderListResponse = {
         questionId: number;
         question: string;
     }[];
-}[];
+}[] | {
+    content: {
+        folderId: number;
+        name: string;
+        bookmarks: {
+            bookmarkId: number;
+            questionId: number;
+            question: string;
+        }[];
+    }[];
+};
 
 export type GetBookmarkedQuestionsInFolderResponse = {
     folderId: number;

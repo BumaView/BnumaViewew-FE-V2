@@ -6,7 +6,7 @@ import Header from '@/components/Header';
 import { sessionService } from '@/services/sessionService';
 import { bookmarkService } from '@/services/bookmarkService';
 import { questionService } from '@/services/questionService';
-import { question } from '@/types';
+import { question, bookmark } from '@/types';
 import { UserInfo } from '@/lib/types';
 
 const PracticePage = () => {
@@ -73,13 +73,30 @@ const PracticePage = () => {
 
   const loadBookmarks = async () => {
     try {
-      const folders = await bookmarkService.getBookmarkFolders();
+      console.log('Loading bookmarks...');
+      const response = await bookmarkService.getBookmarkFolders();
+      console.log('Bookmarks response:', response);
+      
       const bookmarkedIds = new Set<number>();
+      
+      // 백엔드 응답 구조에 따라 처리
+      let folders: bookmark.GetBookmarkedFolderListResponse;
+      if (Array.isArray(response)) {
+        folders = response;
+      } else if (response && 'content' in response) {
+        folders = response.content;
+      } else {
+        console.error('Unexpected bookmarks response structure:', response);
+        return;
+      }
+      
       folders.forEach(folder => {
         folder.bookmarks.forEach(bookmark => {
           bookmarkedIds.add(bookmark.questionId);
         });
       });
+      
+      console.log('Bookmarked question IDs:', Array.from(bookmarkedIds));
       setBookmarkedQuestions(bookmarkedIds);
     } catch (error) {
       console.error('Load bookmarks error:', error);
@@ -287,10 +304,39 @@ const PracticePage = () => {
     setIsBookmarking(true);
     try {
       const isBookmarked = bookmarkedQuestions.has(questionId);
+      console.log(`Toggling bookmark for question ${questionId}, currently bookmarked: ${isBookmarked}`);
       
       if (isBookmarked) {
-        // 북마크 제거 - 실제로는 북마크 ID가 필요하지만 여기서는 간단히 처리
-        await loadBookmarks();
+        // 북마크 제거 - 모든 폴더에서 해당 질문의 북마크를 찾아서 제거
+        try {
+          const folders = await bookmarkService.getBookmarkFolders();
+          let foldersToCheck: bookmark.GetBookmarkedFolderListResponse;
+          if (Array.isArray(folders)) {
+            foldersToCheck = folders;
+          } else if (folders && 'content' in folders) {
+            foldersToCheck = folders.content;
+          } else {
+            throw new Error('Invalid folders response');
+          }
+          
+          for (const folder of foldersToCheck) {
+            const bookmark = folder.bookmarks.find(b => b.questionId === questionId);
+            if (bookmark) {
+              await bookmarkService.unbookmarkingQuestion(bookmark.bookmarkId);
+              break;
+            }
+          }
+          
+          setBookmarkedQuestions(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(questionId);
+            return newSet;
+          });
+        } catch (error) {
+          console.error('Error removing bookmark:', error);
+          // 에러 발생 시 전체 북마크 목록 다시 로드
+          await loadBookmarks();
+        }
       } else {
         // 북마크 추가 - 기본 폴더에 추가
         await bookmarkService.bookmarkingQuestion({
@@ -298,9 +344,11 @@ const PracticePage = () => {
           folderId: 1 // 기본 폴더 ID
         });
         setBookmarkedQuestions(prev => new Set([...prev, questionId]));
+        console.log(`Bookmarked question ${questionId}`);
       }
     } catch (error) {
       console.error('Bookmark toggle error:', error);
+      alert('북마크 처리 중 오류가 발생했습니다.');
     } finally {
       setIsBookmarking(false);
     }

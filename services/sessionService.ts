@@ -33,7 +33,7 @@ export const sessionService = {
     // 랜덤 질문 조회 (간단한 버전)
     getRandomQuestion: async (): Promise<session.CreateMockInterviewResponse> => {
         try {
-            const response = await api.get("/api/interviews/random");
+            const response = await api.get("/user/interviews");
             return response.data;
         } catch (error) {
             throw handleApiError(error);

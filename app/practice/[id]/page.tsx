@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { sessionService } from '@/services/sessionService';
 import { bookmarkService } from '@/services/bookmarkService';
+import { bookmark } from '@/types';
 
 interface Question {
   id: number;
@@ -144,8 +145,20 @@ const InterviewSessionPage = ({ params }: { params: Promise<{ id: string }> | { 
 
   const loadBookmarks = async () => {
     try {
-      const folders = await bookmarkService.getBookmarkFolders();
+      const response = await bookmarkService.getBookmarkFolders();
       const bookmarkedIds = new Set<number>();
+      
+      // 백엔드 응답 구조에 따라 처리
+      let folders: bookmark.GetBookmarkedFolderListResponse;
+      if (Array.isArray(response)) {
+        folders = response;
+      } else if (response && 'content' in response) {
+        folders = response.content;
+      } else {
+        console.error('Unexpected bookmarks response structure:', response);
+        return;
+      }
+      
       folders.forEach(folder => {
         folder.bookmarks.forEach(bookmark => {
           bookmarkedIds.add(bookmark.questionId);

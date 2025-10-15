@@ -22,11 +22,15 @@ export const authOptions: AuthOptions = {
             role: 'User'
           })
           
+          console.log('Google login response from backend:', response)
+          
           // 사용자 정보를 user 객체에 저장
           if ('accessToken' in response) {
             user.accessToken = response.accessToken
             user.refreshToken = response.refreshToken
             user.id = response.userId?.toString() || '1'
+            user.userType = response.userType || 'USER'
+            user.name = response.name || user.name
           }
           
           return true
@@ -42,7 +46,7 @@ export const authOptions: AuthOptions = {
         // 구글 로그인 시 사용자 정보를 토큰에 추가
         token.userId = Number(user.id) || 0
         token.username = user.name || user.email!.split('@')[0]
-        token.userType = 'USER'
+        token.userType = user.userType || 'USER' // 백엔드에서 받은 userType 사용
         token.onboardingCompleted = false
         token.email = user.email || undefined
         token.image = user.image || undefined

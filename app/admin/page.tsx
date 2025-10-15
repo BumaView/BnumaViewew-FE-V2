@@ -21,28 +21,42 @@ const AdminPage = () => {
 
   useEffect(() => {
     const loadData = async () => {
-      const token = localStorage.getItem('accessToken');
-      const storedUserInfo = localStorage.getItem('userInfo');
-
-      if (!token || !storedUserInfo) {
-        router.push('/login');
-        return;
-      }
-
-      const parsedUserInfo = JSON.parse(storedUserInfo);
-      if (parsedUserInfo.userType !== 'ADMIN') {
-        alert('관리자 권한이 필요합니다.');
-        router.push('/dashboard');
-        return;
-      }
-
-      setUserInfo(parsedUserInfo);
-      
       try {
+        const token = localStorage.getItem('accessToken');
+        const storedUserInfo = localStorage.getItem('userInfo');
+
+        if (!token || !storedUserInfo) {
+          router.push('/login');
+          return;
+        }
+
+        const parsedUserInfo = JSON.parse(storedUserInfo);
+        if (parsedUserInfo.userType !== 'ADMIN') {
+          alert('관리자 권한이 필요합니다.');
+          router.push('/dashboard');
+          return;
+        }
+
+        setUserInfo(parsedUserInfo);
+        
         const data = await questionService.searchAllQuestions(0, 100);
-        setQuestions(data.questions);
+        console.log('Questions data from API:', data);
+        
+        // 안전하게 questions 배열 추출
+        if (data && Array.isArray(data.questions)) {
+          setQuestions(data.questions);
+        } else if (Array.isArray(data)) {
+          // 만약 data가 직접 배열이라면
+          setQuestions(data);
+        } else {
+          console.error('Unexpected data structure:', data);
+          setQuestions([]);
+        }
       } catch (error) {
         console.error('Load questions error:', error);
+        setQuestions([]);
+        // 에러 발생 시 사용자에게 알림
+        alert('질문 목록을 불러오는데 실패했습니다. 페이지를 새로고침해주세요.');
       } finally {
         setIsLoading(false);
       }
@@ -65,7 +79,11 @@ const AdminPage = () => {
       
       // 목록 새로고침
       const data = await questionService.searchAllQuestions(0, 100);
-      setQuestions(data.questions);
+      if (data && Array.isArray(data.questions)) {
+        setQuestions(data.questions);
+      } else if (Array.isArray(data)) {
+        setQuestions(data);
+      }
       
       alert('질문이 등록되었습니다.');
     } catch (error) {
@@ -90,7 +108,11 @@ const AdminPage = () => {
       
       // 목록 새로고침
       const data = await questionService.searchAllQuestions(0, 100);
-      setQuestions(data.questions);
+      if (data && Array.isArray(data.questions)) {
+        setQuestions(data.questions);
+      } else if (Array.isArray(data)) {
+        setQuestions(data);
+      }
       
       alert('일괄 등록이 완료되었습니다.');
     } catch (error) {

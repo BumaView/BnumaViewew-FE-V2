@@ -51,7 +51,19 @@ api.interceptors.response.use(
         console.error('API Error:', error.response?.data || error.message);
         console.error('Error Status:', error.response?.status);
         console.error('Error Headers:', error.response?.headers);
+        console.error('Request URL:', error.config?.url);
+        console.error('Request Method:', error.config?.method);
         console.error('Full Error Object:', error);
+        
+        // 프로덕션에서도 에러를 확인할 수 있도록 alert 추가
+        if (process.env.NODE_ENV === 'production') {
+            console.error('Production Error Details:', {
+                message: error.message,
+                status: error.response?.status,
+                url: error.config?.url,
+                method: error.config?.method
+            });
+        }
         
         if (error.response?.status === 401) {
             // 클라이언트 사이드에서만 localStorage 접근

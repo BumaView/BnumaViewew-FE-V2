@@ -16,7 +16,7 @@ export const authService = {
     },
 
     // 로그인
-    login: async (data: auth.LoginRequest): Promise<auth.LoginResponse> => {
+    login: async (data: auth.LoginRequest): Promise<auth.AuthResponse> => {
         try {
             const response = await api.post("/api/auth/login", data);
             return response.data;

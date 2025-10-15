@@ -29,19 +29,28 @@ const LoginPage = () => {
 
     try {
       const response = await authService.login(formData);
+      console.log('Login response from backend:', response);
 
-      // 토큰을 localStorage에 저장
-      localStorage.setItem('accessToken', response.accessToken);
-      localStorage.setItem('refreshToken', response.refreshToken);
-      
-      // 사용자 정보를 localStorage에 저장
-      const userInfo = {
-        userId: 1, // 실제로는 서버에서 받아온 사용자 ID
-        name: formData.userId, // 임시로 userId를 이름으로 사용
-        userType: formData.userId === 'admin' ? 'ADMIN' : 'USER',
-        onboardingCompleted: true
-      };
-      localStorage.setItem('userInfo', JSON.stringify(userInfo));
+      // 타입 가드로 성공 응답인지 확인
+      if ('accessToken' in response) {
+        // 토큰을 localStorage에 저장
+        localStorage.setItem('accessToken', response.accessToken);
+        localStorage.setItem('refreshToken', response.refreshToken);
+        
+        // 사용자 정보를 localStorage에 저장 (백엔드에서 받은 정보 사용)
+        const userInfo = {
+          userId: response.userId || 1,
+          name: response.name || formData.userId,
+          userType: response.userType || 'USER', // 백엔드에서 받은 userType 사용
+          onboardingCompleted: true
+        };
+        localStorage.setItem('userInfo', JSON.stringify(userInfo));
+        console.log('Login userInfo saved to localStorage:', userInfo);
+      } else {
+        console.error('Login failed:', response);
+        setError('로그인에 실패했습니다.');
+        return;
+      }
 
       // 대시보드로 리다이렉트
       router.push('/dashboard');
@@ -91,6 +100,16 @@ const LoginPage = () => {
           localStorage.setItem('accessToken', session.accessToken);
           localStorage.setItem('refreshToken', session.refreshToken);
           console.log('Google login tokens saved to localStorage');
+          
+          // Google 로그인 시 userInfo도 저장 (백엔드에서 받은 userType 사용)
+          const userInfo = {
+            userId: session.user?.id || 1,
+            name: session.user?.name || session.user?.email?.split('@')[0] || 'Google User',
+            userType: session.user?.userType || 'USER', // 백엔드에서 받은 userType 사용
+            onboardingCompleted: session.user?.onboardingCompleted || false
+          };
+          localStorage.setItem('userInfo', JSON.stringify(userInfo));
+          console.log('Google login userInfo saved to localStorage:', userInfo);
         }
         
         // 성공적으로 로그인된 경우 대시보드로 리다이렉션

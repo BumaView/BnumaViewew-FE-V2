@@ -79,7 +79,8 @@ const LoginPage = () => {
       });
       
       if (result?.error) {
-        setError('Google 로그인에 실패했습니다.');
+        console.error('Google login error:', result.error);
+        setError(`Google 로그인에 실패했습니다: ${result.error}`);
         return;
       }
       

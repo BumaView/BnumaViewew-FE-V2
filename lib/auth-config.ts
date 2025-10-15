@@ -3,6 +3,7 @@ import GoogleProvider from 'next-auth/providers/google'
 import { authService } from '@/services/authService'
 
 export const authOptions: AuthOptions = {
+  debug: true, // 디버깅 활성화
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -100,7 +101,7 @@ export const authOptions: AuthOptions = {
   },
   pages: {
     signIn: '/login',
-    error: '/login',
+    error: '/login?error=OAuthSignin',
   },
   session: {
     strategy: 'jwt',

@@ -17,7 +17,7 @@ export const sessionService = {
     // 모의면접 생성
     createMockInterview: async (data: session.CreateMockInterviewRequest): Promise<session.CreateMockInterviewResponse> => {
         try {
-            const response = await api.post("/api/interviews", data);
+            const response = await api.post("/user/interviews", data);
             return response.data;
         } catch (error) {
             throw handleApiError(error);
@@ -37,7 +37,7 @@ export const sessionService = {
     // 답변 기록
     recordAnswer: async (interviewId: number, data: session.SessionBySessionQuestionAnswerRecordsRequest): Promise<session.SessionBySessionQuestionAnswerRecordsResponse> => {
         try {
-            const response = await api.post(`/api/interviews/${interviewId}`, data);
+            const response = await api.post(`/user/interviews/${interviewId}`, data);
             return response.data;
         } catch (error) {
             throw handleApiError(error);
@@ -47,7 +47,7 @@ export const sessionService = {
     // 면접 완료
     finishInterview: async (interviewId: number, totalTime: number = 0): Promise<session.FinishedMockInterviewResponse> => {
         try {
-            const response = await api.post(`/api/interviews/${interviewId}/finish`, { totalTime });
+            const response = await api.get(`/user/interviews/${interviewId}/finish`);
             return response.data;
         } catch (error) {
             throw handleApiError(error);

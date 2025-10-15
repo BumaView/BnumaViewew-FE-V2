@@ -48,7 +48,7 @@ export const authService = {
     // 회원가입
     register: async (data: auth.RegisterRequest): Promise<auth.RegisterResponse> => {
         try {
-            const response = await api.post("/api/auth/register", data);
+            const response = await api.post("/api/auth/sign-up", data);
             return response.data;
         } catch (error) {
             throw handleApiError(error);

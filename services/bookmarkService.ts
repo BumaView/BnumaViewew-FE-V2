@@ -8,7 +8,7 @@ export const bookmarkService = {
     // 북마크 폴더 목록 조회
     getBookmarkFolders: async (): Promise<bookmark.GetBookmarkedFolderListResponse> => {
         try {
-            const response = await api.get("/api/bookmarks");
+            const response = await api.get("/user/bookmarks");
             return response.data;
         } catch (error) {
             throw handleApiError(error);
@@ -18,7 +18,7 @@ export const bookmarkService = {
     // 폴더별 북마크된 질문 조회
     getBookmarkedQuestionsInFolder: async (folderId: number): Promise<bookmark.GetBookmarkedQuestionsInFolderResponse> => {
         try {
-            const response = await api.get(`/api/bookmarks/${folderId}`);
+            const response = await api.get(`/user/bookmarks/${folderId}`);
             return response.data;
         } catch (error) {
             throw handleApiError(error);
@@ -28,7 +28,7 @@ export const bookmarkService = {
     // 북마크 폴더 생성
     makeBookmarkedFolder: async (data: bookmark.MakeBookmarkedFolderRequest): Promise<bookmark.MakeBookmarkedFolderResponse> => {
         try {
-            const response = await api.post("/api/bookmarks/folders", data);
+            const response = await api.post("/user/bookmarks/forders", data);
             return response.data;
         } catch (error) {
             throw handleApiError(error);
@@ -38,7 +38,7 @@ export const bookmarkService = {
     // 질문 북마크
     bookmarkingQuestion: async (data: bookmark.BookmarkingQuestionRequest): Promise<bookmark.BookmarkingQuestionResponse> => {
         try {
-            const response = await api.post("/api/bookmarks", data);
+            const response = await api.post("/user/bookmarks", data);
             return response.data;
         } catch (error) {
             throw handleApiError(error);

@@ -28,7 +28,7 @@ export const bookmarkService = {
     // 북마크 폴더 생성
     makeBookmarkedFolder: async (data: bookmark.MakeBookmarkedFolderRequest): Promise<bookmark.MakeBookmarkedFolderResponse> => {
         try {
-            const response = await api.post("/user/bookmarks/folders", data);
+            const response = await api.post("/user/bookmarks/forders", data);
             return response.data;
         } catch (error) {
             throw handleApiError(error);
@@ -48,7 +48,7 @@ export const bookmarkService = {
     // 북마크 해제
     unbookmarkingQuestion: async (bookmarkId: number): Promise<void> => {
         try {
-            await api.delete(`/api/bookmarks?bookmarkId=${bookmarkId}`);
+            await api.delete(`/user/bookmarks?bookmarkId=${bookmarkId}`);
         } catch (error) {
             throw handleApiError(error);
         }
@@ -57,7 +57,7 @@ export const bookmarkService = {
     // 북마크 폴더 삭제
     deleteBookmarkFolder: async (folderId: number): Promise<void> => {
         try {
-            await api.delete(`/api/bookmarks/folders/${folderId}`);
+            await api.delete(`/user/bookmarks/forders/${folderId}`);
         } catch (error) {
             throw handleApiError(error);
         }

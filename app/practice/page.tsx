@@ -149,6 +149,14 @@ const PracticePage = () => {
     try {
       console.log('Starting random interview...');
       
+      // 토큰 확인
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        alert('로그인이 필요합니다. 로그인 페이지로 이동합니다.');
+        router.push('/login');
+        return;
+      }
+      
       const sessionData = await sessionService.createMockInterview({
         title: '랜덤 면접',
         category: '기술면접',
@@ -159,7 +167,20 @@ const PracticePage = () => {
       router.push(`/practice/${sessionData.id}`);
     } catch (error: unknown) {
       console.error('Start random interview error:', error);
-      alert(error instanceof Error ? error.message : '면접 시작에 실패했습니다.');
+      
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { status?: number } };
+        if (axiosError.response?.status === 403) {
+          alert('백엔드 서버에 접근할 수 없습니다. 잠시 후 다시 시도해주세요.');
+        } else if (axiosError.response?.status === 401) {
+          alert('로그인이 만료되었습니다. 다시 로그인해주세요.');
+          router.push('/login');
+        } else {
+          alert('면접 시작에 실패했습니다. 네트워크 연결을 확인해주세요.');
+        }
+      } else {
+        alert('면접 시작에 실패했습니다.');
+      }
     } finally {
       setIsStarting(false);
     }
@@ -170,6 +191,14 @@ const PracticePage = () => {
 
     setIsStarting(true);
     try {
+      // 토큰 확인
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        alert('로그인이 필요합니다. 로그인 페이지로 이동합니다.');
+        router.push('/login');
+        return;
+      }
+
       const sessionData = await sessionService.createMockInterview({
         title: '선택한 질문 면접',
         category: '기술면접',
@@ -179,7 +208,20 @@ const PracticePage = () => {
       router.push(`/practice/${sessionData.id}`);
     } catch (error: unknown) {
       console.error('Start selected interview error:', error);
-      alert(error instanceof Error ? error.message : '면접 시작에 실패했습니다.');
+      
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { status?: number } };
+        if (axiosError.response?.status === 403) {
+          alert('백엔드 서버에 접근할 수 없습니다. 잠시 후 다시 시도해주세요.');
+        } else if (axiosError.response?.status === 401) {
+          alert('로그인이 만료되었습니다. 다시 로그인해주세요.');
+          router.push('/login');
+        } else {
+          alert('면접 시작에 실패했습니다. 네트워크 연결을 확인해주세요.');
+        }
+      } else {
+        alert('면접 시작에 실패했습니다.');
+      }
     } finally {
       setIsStarting(false);
     }
@@ -189,6 +231,14 @@ const PracticePage = () => {
     setIsStarting(true);
     try {
       console.log('Starting advanced random interview with filters:', advancedFilters);
+      
+      // 토큰 확인
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        alert('로그인이 필요합니다. 로그인 페이지로 이동합니다.');
+        router.push('/login');
+        return;
+      }
       
       const sessionData = await sessionService.createMockInterview({
         title: '필터링된 면접',
@@ -200,7 +250,20 @@ const PracticePage = () => {
       router.push(`/practice/${sessionData.id}`);
     } catch (error: unknown) {
       console.error('Advanced random interview error:', error);
-      alert(error instanceof Error ? error.message : '면접 시작에 실패했습니다.');
+      
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { status?: number } };
+        if (axiosError.response?.status === 403) {
+          alert('백엔드 서버에 접근할 수 없습니다. 잠시 후 다시 시도해주세요.');
+        } else if (axiosError.response?.status === 401) {
+          alert('로그인이 만료되었습니다. 다시 로그인해주세요.');
+          router.push('/login');
+        } else {
+          alert('면접 시작에 실패했습니다. 네트워크 연결을 확인해주세요.');
+        }
+      } else {
+        alert('면접 시작에 실패했습니다.');
+      }
     } finally {
       setIsStarting(false);
     }

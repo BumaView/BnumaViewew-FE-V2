@@ -110,7 +110,7 @@ const OnboardingPage = () => {
       } else {
         setError(data.message || '프로필 업데이트에 실패했습니다.');
       }
-    } catch (_error) {
+    } catch {
       setError('네트워크 오류가 발생했습니다.');
     } finally {
       setIsLoading(false);

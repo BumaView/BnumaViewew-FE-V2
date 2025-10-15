@@ -64,9 +64,9 @@ const BookmarksPage = () => {
       await loadFolders();
       setFolderName('');
       setShowCreateFolder(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Create folder error:', error);
-      alert(error.message || '폴더 생성에 실패했습니다.');
+      alert(error instanceof Error ? error.message : '폴더 생성에 실패했습니다.');
     } finally {
       setIsCreatingFolder(false);
     }
@@ -78,9 +78,9 @@ const BookmarksPage = () => {
     try {
       await bookmarkService.unbookmarkingQuestion(bookmarkId);
       await loadFolders();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Remove bookmark error:', error);
-      alert(error.message || '북마크 삭제에 실패했습니다.');
+      alert(error instanceof Error ? error.message : '북마크 삭제에 실패했습니다.');
     }
   };
 
@@ -104,31 +104,8 @@ const BookmarksPage = () => {
     return folder ? folder.bookmarks : [];
   };
 
-  const getFolderBookmarkCount = (folderId: number) => {
-    const folder = folders.find(f => f.folderId === folderId);
-    return folder ? folder.bookmarks.length : 0;
-  };
-
   const getTotalBookmarkCount = () => {
     return folders.reduce((total, folder) => total + folder.bookmarks.length, 0);
-  };
-
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case 'easy': return 'text-green-600 bg-green-50';
-      case 'medium': return 'text-yellow-600 bg-yellow-50';
-      case 'hard': return 'text-red-600 bg-red-50';
-      default: return 'text-gray-600 bg-gray-50';
-    }
-  };
-
-  const getDifficultyText = (difficulty: string) => {
-    switch (difficulty) {
-      case 'easy': return '쉬움';
-      case 'medium': return '보통';
-      case 'hard': return '어려움';
-      default: return difficulty;
-    }
   };
 
   if (isLoading) {

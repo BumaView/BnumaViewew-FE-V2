@@ -43,7 +43,11 @@ export const useQuestionQueries = () => {
     const useRandomQuestion = (filters?: question.RandomlySelectInterviewQuestionByFiltersRequest) => {
         return useQuery({
             queryKey: ["questions", "random", filters],
-            queryFn: () => questionService.randomlySelectInterviewQuestionByFilters(filters),
+            queryFn: () => questionService.randomlySelectInterviewQuestionByFilters(filters || {
+                category: '',
+                company: '',
+                year: 0
+            }),
             staleTime: 30 * 1000, // 30초 - 너무 자주 요청하지 않도록 조정
         });
     };
@@ -51,7 +55,7 @@ export const useQuestionQueries = () => {
     // 질문 등록 뮤테이션
     const useCreateQuestion = () => {
         return useMutation({
-            mutationFn: questionService.registerSingleQuestion,
+            mutationFn: questionService.registerQuestions,
             onSuccess: () => {
                 queryClient.invalidateQueries({ queryKey: ["questions"] });
             },
@@ -61,7 +65,8 @@ export const useQuestionQueries = () => {
     // 질문 수정 뮤테이션
     const useUpdateQuestion = () => {
         return useMutation({
-            mutationFn: questionService.editQuestion,
+            mutationFn: ({ id, data }: { id: number; data: question.EditQuestionRequest }) => 
+                questionService.editQuestion(id, data),
             onSuccess: (_, variables) => {
                 queryClient.invalidateQueries({ queryKey: ["questions"] });
                 queryClient.invalidateQueries({ queryKey: ["questions", "detail", variables.id] });

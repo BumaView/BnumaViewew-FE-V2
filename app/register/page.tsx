@@ -52,8 +52,8 @@ const RegisterPage = () => {
 
       // 온보딩으로 이동
       router.push('/onboarding');
-    } catch (error: any) {
-      setError(error.message || '회원가입에 실패했습니다.');
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : '회원가입에 실패했습니다.');
     } finally {
       setIsLoading(false);
     }

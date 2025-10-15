@@ -36,8 +36,8 @@ const LoginPage = () => {
 
       // 대시보드로 리다이렉트
       router.push('/dashboard');
-    } catch (error: any) {
-      setError(error.message || '로그인에 실패했습니다.');
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : '로그인에 실패했습니다.');
     } finally {
       setIsLoading(false);
     }

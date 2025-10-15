@@ -2,7 +2,7 @@ import axios from "axios";
 
 export const api = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000", // 로컬 API 서버 URL
-    timeout: 60000, // 60초로 증가 (백엔드 서버가 느림)
+    timeout: 600000, // 600초로 증가 (Google Sheets 처리 시간 고려)
     headers: {
         "Content-Type": "application/json",
     },

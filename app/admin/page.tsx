@@ -112,6 +112,9 @@ const AdminPage = () => {
 
     setIsSubmitting(true);
     try {
+      console.log('Starting Google Sheets bulk upload...');
+      console.log('URL:', googleSheetUrl);
+      
       await questionService.registerMultipleQuestions({
         googleSheetUrl
       });
@@ -130,7 +133,17 @@ const AdminPage = () => {
       alert('일괄 등록이 완료되었습니다.');
     } catch (error) {
       console.error('Bulk upload error:', error);
-      alert('일괄 등록에 실패했습니다.');
+      
+      if (error && typeof error === 'object' && 'message' in error) {
+        const errorMessage = (error as { message: string }).message;
+        if (errorMessage.includes('timeout')) {
+          alert('Google Sheets 처리 시간이 오래 걸려 타임아웃이 발생했습니다. 잠시 후 다시 시도해주세요.');
+        } else {
+          alert(`일괄 등록에 실패했습니다: ${errorMessage}`);
+        }
+      } else {
+        alert('일괄 등록에 실패했습니다. 네트워크 연결을 확인해주세요.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -348,7 +361,7 @@ const AdminPage = () => {
                   disabled={isSubmitting || !googleSheetUrl.trim()}
                   className="bg-green-600 text-white px-4 py-2 rounded-sm text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isSubmitting ? '등록 중...' : '일괄 등록'}
+                  {isSubmitting ? 'Google Sheets 처리 중... (최대 5분 소요)' : '일괄 등록'}
                 </button>
               </div>
             </div>

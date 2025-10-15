@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import { sessionService } from '@/services/sessionService';
 import { bookmarkService } from '@/services/bookmarkService';
-import { mockQuestions } from '@/lib/data';
+import { questionService } from '@/services/questionService';
 import { question } from '@/types';
 import { UserInfo } from '@/lib/types';
 
@@ -31,50 +31,42 @@ const PracticePage = () => {
   });
   const router = useRouter();
 
-  const loadQuestions = useCallback(() => {
+  const loadQuestions = useCallback(async () => {
     try {
       console.log('Loading questions with filters:', filters);
       
-      // mockQuestions를 API 형식으로 변환
-      let filteredQuestions = mockQuestions.map(q => ({
-        id: q.id,
-        question: q.title, // title을 question으로 매핑
-        company: q.company || '기타',
-        year: 2024, // 기본값
-        category: q.category
-      }));
-
-      // 필터 적용
+      // 실제 백엔드 API에서 질문 목록 가져오기
+      let response;
+      
       if (filters.search) {
-        filteredQuestions = filteredQuestions.filter(q => 
-          q.question.toLowerCase().includes(filters.search.toLowerCase()) ||
-          q.company.toLowerCase().includes(filters.search.toLowerCase()) ||
-          q.category.toLowerCase().includes(filters.search.toLowerCase())
-        );
+        // 검색어가 있으면 검색 API 사용
+        response = await questionService.searchQuestions(filters.search, 0, 100);
+      } else {
+        // 검색어가 없으면 전체 질문 목록 가져오기
+        response = await questionService.searchAllQuestions(0, 100);
       }
       
+      let questions = response.questions || [];
+      
+      // 클라이언트 사이드 필터링 (회사, 연도, 카테고리)
       if (filters.company) {
-        filteredQuestions = filteredQuestions.filter(q => 
-          q.company.toLowerCase().includes(filters.company.toLowerCase())
-        );
-      }
-      
-      if (filters.category) {
-        filteredQuestions = filteredQuestions.filter(q => 
-          q.category.toLowerCase().includes(filters.category.toLowerCase())
-        );
-      }
-      
-      if (filters.year) {
-        filteredQuestions = filteredQuestions.filter(q => 
-          q.year === parseInt(filters.year)
-        );
+        questions = questions.filter(q => q.company === filters.company);
       }
 
-      console.log('Filtered questions:', filteredQuestions);
-      setQuestions(filteredQuestions);
+      if (filters.year) {
+        questions = questions.filter(q => q.year === parseInt(filters.year));
+      }
+
+      if (filters.category) {
+        questions = questions.filter(q => q.category === filters.category);
+      }
+
+      console.log('Loaded questions from API:', questions);
+      setQuestions(questions);
     } catch (error) {
-      console.error('Load questions error:', error);
+      console.error('Error loading questions:', error);
+      // 에러 발생 시 빈 배열로 설정
+      setQuestions([]);
     }
   }, [filters]);
 
@@ -111,7 +103,7 @@ const PracticePage = () => {
       }
 
       try {
-        loadQuestions();
+        await loadQuestions();
         await loadBookmarks();
       } catch (error) {
         console.error('Load data error:', error);
@@ -123,6 +115,13 @@ const PracticePage = () => {
 
     loadData();
   }, [loadQuestions, router]);
+
+  // 필터가 변경될 때마다 질문 목록 다시 로드
+  useEffect(() => {
+    if (!isLoading) {
+      loadQuestions();
+    }
+  }, [filters, loadQuestions, isLoading]);
 
   const handleFilterChange = (key: string, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
@@ -157,10 +156,14 @@ const PracticePage = () => {
         return;
       }
       
+      // 백엔드 API를 사용하여 랜덤 질문 가져오기
+      await questionService.randomlySelectInterviewQuestion();
+      
+      // 랜덤 질문으로 면접 세션 생성
       const sessionData = await sessionService.createMockInterview({
         title: '랜덤 면접',
         category: '기술면접',
-        count: 5
+        count: 1 // 랜덤 질문 1개
       });
       
       console.log('Session created:', sessionData);
@@ -240,10 +243,18 @@ const PracticePage = () => {
         return;
       }
       
+      // 백엔드 API를 사용하여 필터링된 랜덤 질문 가져오기
+      await questionService.randomlySelectInterviewQuestionByFilters({
+        category: advancedFilters.category,
+        company: advancedFilters.company,
+        year: advancedFilters.year
+      });
+      
+      // 랜덤 질문으로 면접 세션 생성
       const sessionData = await sessionService.createMockInterview({
         title: '필터링된 면접',
         category: advancedFilters.category || '기술면접',
-        count: 5
+        count: 1 // 랜덤 질문 1개
       });
       
       console.log('Advanced session created:', sessionData);

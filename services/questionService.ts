@@ -84,7 +84,10 @@ export const questionService = {
     // Google Sheets로 질문 일괄 등록 (관리자용)
     registerMultipleQuestions: async (data: question.RegisterMultipleQuestionRequest): Promise<question.RegisterMultipleQuestionResponse> => {
         try {
-            const response = await api.post("/admin/questions/sheets", data);
+            // Google Sheets 처리는 시간이 오래 걸릴 수 있으므로 긴 타임아웃 설정
+            const response = await api.post("/admin/questions/sheets", data, {
+                timeout: 300000 // 5분 타임아웃
+            });
             return response.data;
         } catch (error) {
             throw handleApiError(error);

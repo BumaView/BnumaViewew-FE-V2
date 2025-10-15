@@ -41,9 +41,12 @@ export const bookmarkService = {
     // 질문 북마크
     bookmarkingQuestion: async (data: bookmark.BookmarkingQuestionRequest): Promise<bookmark.BookmarkingQuestionResponse> => {
         try {
+            console.log('Bookmarking question request:', data);
             const response = await api.post("/user/bookmarks", data);
+            console.log('Bookmarking question response:', response.data);
             return response.data;
         } catch (error) {
+            console.error('Bookmarking question error:', error);
             throw handleApiError(error);
         }
     },
@@ -51,8 +54,11 @@ export const bookmarkService = {
     // 북마크 해제
     unbookmarkingQuestion: async (bookmarkId: number): Promise<void> => {
         try {
+            console.log('Unbookmarking question with ID:', bookmarkId);
             await api.delete(`/user/bookmarks?bookmarkId=${bookmarkId}`);
+            console.log('Question unbookmarked successfully');
         } catch (error) {
+            console.error('Unbookmarking question error:', error);
             throw handleApiError(error);
         }
     },

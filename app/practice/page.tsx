@@ -368,14 +368,34 @@ const PracticePage = () => {
       } else {
         // 북마크 추가 - 기본 폴더에 추가
         try {
-          await bookmarkService.bookmarkingQuestion({
+          console.log(`Adding bookmark for question ${questionId} to folder 1...`);
+          const response = await bookmarkService.bookmarkingQuestion({
             questionId: questionId,
             folderId: 1 // 기본 폴더 ID
           });
-          console.log(`Added bookmark for question ${questionId}`);
+          console.log('Bookmark added successfully:', response);
         } catch (error) {
           console.error('Error adding bookmark:', error);
-          alert('북마크 추가에 실패했습니다.');
+          
+          if (error && typeof error === 'object' && 'response' in error) {
+            const axiosError = error as { response?: { status?: number; data?: unknown } };
+            if (axiosError.response?.status === 403) {
+              alert('API 접근 권한이 없습니다. 로그인을 다시 시도해주세요.');
+            } else if (axiosError.response?.status === 401) {
+              alert('로그인이 만료되었습니다. 다시 로그인해주세요.');
+              localStorage.removeItem('accessToken');
+              localStorage.removeItem('refreshToken');
+              localStorage.removeItem('userInfo');
+              router.push('/login');
+            } else if (axiosError.response?.status === 409) {
+              alert('이미 북마크된 질문입니다.');
+            } else {
+              console.error('API Error Response:', axiosError.response?.data);
+              alert('북마크 추가에 실패했습니다. 네트워크 연결을 확인해주세요.');
+            }
+          } else {
+            alert('북마크 추가에 실패했습니다.');
+          }
           return;
         }
       }

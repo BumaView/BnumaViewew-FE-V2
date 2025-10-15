@@ -25,7 +25,7 @@ export type GetBookmarkedFolderListResponse = {
     bookmarks: {
         bookmarkId: number;
         questionId: number;
-        question: string;
+        question: string | null; // null 허용
     }[];
 }[] | {
     content: {
@@ -34,7 +34,7 @@ export type GetBookmarkedFolderListResponse = {
         bookmarks: {
             bookmarkId: number;
             questionId: number;
-            question: string;
+            question: string | null; // null 허용
         }[];
     }[];
 };
@@ -45,6 +45,6 @@ export type GetBookmarkedQuestionsInFolderResponse = {
     bookmarks: {
         bookmarkId: number;
         questionId: number;
-        question: string;
+        question: string | null; // null 허용
     }[];
 };

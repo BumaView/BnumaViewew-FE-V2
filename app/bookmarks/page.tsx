@@ -129,11 +129,28 @@ const BookmarksPage = () => {
     if (!confirm('이 북마크를 삭제하시겠습니까?')) return;
 
     try {
+      console.log(`Removing bookmark ${bookmarkId}...`);
       await bookmarkService.unbookmarkingQuestion(bookmarkId);
-      await loadFolders();
+      console.log('Bookmark removed successfully');
+      
+      // 북마크 제거 후 목록 다시 로드
+      await loadBookmarkData();
     } catch (error: unknown) {
       console.error('Remove bookmark error:', error);
-      alert(error instanceof Error ? error.message : '북마크 삭제에 실패했습니다.');
+      
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { status?: number } };
+        if (axiosError.response?.status === 403) {
+          alert('API 접근 권한이 없습니다. 로그인을 다시 시도해주세요.');
+        } else if (axiosError.response?.status === 401) {
+          alert('로그인이 만료되었습니다. 다시 로그인해주세요.');
+          router.push('/login');
+        } else {
+          alert('북마크 삭제에 실패했습니다. 네트워크 연결을 확인해주세요.');
+        }
+      } else {
+        alert('북마크 삭제에 실패했습니다.');
+      }
     }
   };
 
@@ -340,11 +357,22 @@ const BookmarksPage = () => {
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <h3 className="font-medium text-gray-900">{bookmark.question}</h3>
+                        <h3 className="font-medium text-gray-900">
+                          {bookmark.question || (
+                            <span className="text-gray-400 italic">
+                              질문이 삭제되었거나 찾을 수 없습니다 (ID: {bookmark.questionId})
+                            </span>
+                          )}
+                        </h3>
                       </div>
                       <div className="flex items-center justify-between">
                         <div className="flex gap-2">
                           <span className="text-xs text-gray-500">질문 ID: {bookmark.questionId}</span>
+                          {!bookmark.question && (
+                            <span className="text-xs text-red-500 bg-red-50 px-2 py-1 rounded">
+                              삭제된 질문
+                            </span>
+                          )}
                         </div>
                         <button
                           onClick={() => removeBookmark(bookmark.bookmarkId)}

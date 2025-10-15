@@ -72,6 +72,11 @@ const OnboardingPage = () => {
     }
   };
 
+  const handleSkip = () => {
+    // 온보딩을 건너뛰고 대시보드로 이동
+    router.push('/dashboard');
+  };
+
   const handleSubmit = async () => {
     setError('');
     setIsLoading(true);
@@ -353,14 +358,23 @@ const OnboardingPage = () => {
           {renderStep()}
 
           {/* 버튼 */}
-          <div className="flex justify-between mt-8">
-            <button
-              onClick={prevStep}
-              disabled={currentStep === 1}
-              className="px-6 py-2 border border-gray-200 text-gray-700 rounded-sm text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              이전
-            </button>
+          <div className="flex justify-between items-center mt-8">
+            <div className="flex gap-3">
+              <button
+                onClick={prevStep}
+                disabled={currentStep === 1}
+                className="px-6 py-2 border border-gray-200 text-gray-700 rounded-sm text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                이전
+              </button>
+              
+              <button
+                onClick={handleSkip}
+                className="px-6 py-2 text-gray-500 text-sm font-medium hover:text-gray-700 transition-colors"
+              >
+                건너뛰기
+              </button>
+            </div>
 
             {currentStep === totalSteps ? (
               <button

@@ -52,15 +52,20 @@ const RegisterPage = () => {
 
       // 온보딩으로 이동
       router.push('/onboarding');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Register error:', error);
       
-      if (error.response?.status === 403) {
-        setError('백엔드 서버에 접근할 수 없습니다. 잠시 후 다시 시도해주세요.');
-      } else if (error.response?.status === 409) {
-        setError('이미 존재하는 사용자입니다.');
-      } else if (error.response?.data?.message) {
-        setError(error.response.data.message);
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { status?: number; data?: { message?: string } } };
+        if (axiosError.response?.status === 403) {
+          setError('백엔드 서버에 접근할 수 없습니다. 잠시 후 다시 시도해주세요.');
+        } else if (axiosError.response?.status === 409) {
+          setError('이미 존재하는 사용자입니다.');
+        } else if (axiosError.response?.data?.message) {
+          setError(axiosError.response.data.message);
+        } else {
+          setError('회원가입에 실패했습니다. 네트워크 연결을 확인해주세요.');
+        }
       } else {
         setError('회원가입에 실패했습니다. 네트워크 연결을 확인해주세요.');
       }

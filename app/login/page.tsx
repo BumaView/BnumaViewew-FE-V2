@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { signIn, getSession } from 'next-auth/react';
+import { signIn } from 'next-auth/react';
 import { authService } from '@/services/authService';
 
 const LoginPage = () => {
@@ -45,15 +45,20 @@ const LoginPage = () => {
 
       // 대시보드로 리다이렉트
       router.push('/dashboard');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Login error:', error);
       
-      if (error.response?.status === 403) {
-        setError('백엔드 서버에 접근할 수 없습니다. 잠시 후 다시 시도해주세요.');
-      } else if (error.response?.status === 401) {
-        setError('아이디 또는 비밀번호가 올바르지 않습니다.');
-      } else if (error.response?.data?.message) {
-        setError(error.response.data.message);
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { status?: number; data?: { message?: string } } };
+        if (axiosError.response?.status === 403) {
+          setError('백엔드 서버에 접근할 수 없습니다. 잠시 후 다시 시도해주세요.');
+        } else if (axiosError.response?.status === 401) {
+          setError('아이디 또는 비밀번호가 올바르지 않습니다.');
+        } else if (axiosError.response?.data?.message) {
+          setError(axiosError.response.data.message);
+        } else {
+          setError('로그인에 실패했습니다. 네트워크 연결을 확인해주세요.');
+        }
       } else {
         setError('로그인에 실패했습니다. 네트워크 연결을 확인해주세요.');
       }

@@ -57,42 +57,14 @@ const LoginPage = () => {
       setIsLoading(true);
       setError('');
       
-      const result = await signIn('google', {
-        redirect: false,
+      // NextAuth의 기본 리다이렉션을 사용
+      await signIn('google', {
+        redirect: true,
         callbackUrl: '/dashboard'
       });
-
-      if (result?.error) {
-        setError('Google 로그인에 실패했습니다.');
-        return;
-      }
-
-      if (result?.ok) {
-        // 세션 정보 가져오기
-        const session = await getSession();
-        if (session?.user) {
-          // localStorage에 사용자 정보 저장
-          localStorage.setItem('userInfo', JSON.stringify({
-            userId: session.user.id,
-            name: session.user.name,
-            userType: session.user.userType || 'user',
-            onboardingCompleted: session.user.onboardingCompleted || false,
-            email: session.user.email,
-            image: session.user.image
-          }));
-
-          // 온보딩 완료 여부에 따라 리다이렉트
-          if (session.user.onboardingCompleted) {
-            router.push('/dashboard');
-          } else {
-            router.push('/onboarding');
-          }
-        }
-      }
     } catch (error) {
       console.error('Google login error:', error);
       setError('Google 로그인 중 오류가 발생했습니다.');
-    } finally {
       setIsLoading(false);
     }
   };

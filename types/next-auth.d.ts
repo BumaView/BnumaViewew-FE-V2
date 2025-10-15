@@ -11,13 +11,15 @@ declare module 'next-auth' {
       image?: string
       name?: string
     }
+    accessToken?: string
+    refreshToken?: string
   }
 
   interface User {
-    id: number
-    username: string
-    userType: string
-    onboardingCompleted: boolean
+    id: string
+    username?: string
+    userType?: string
+    onboardingCompleted?: boolean
     accessToken?: string
     refreshToken?: string
   }
@@ -29,6 +31,8 @@ declare module 'next-auth/jwt' {
     username: string
     userType: string
     onboardingCompleted: boolean
+    email?: string
+    image?: string
     accessToken?: string
     refreshToken?: string
   }

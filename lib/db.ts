@@ -15,6 +15,7 @@ export const userDb = {
     password?: string
     userType?: string
     googleId?: string
+    image?: string
   }) {
     const hashedPassword = data.password ? await bcrypt.hash(data.password, 12) : null
     
@@ -26,6 +27,7 @@ export const userDb = {
         password: hashedPassword,
         userType: data.userType || 'USER',
         googleId: data.googleId,
+        image: data.image,
       }
     })
   },

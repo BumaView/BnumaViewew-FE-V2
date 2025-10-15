@@ -33,6 +33,15 @@ const LoginPage = () => {
       // 토큰을 localStorage에 저장
       localStorage.setItem('accessToken', response.accessToken);
       localStorage.setItem('refreshToken', response.refreshToken);
+      
+      // 사용자 정보를 localStorage에 저장
+      const userInfo = {
+        userId: 1, // 실제로는 서버에서 받아온 사용자 ID
+        name: formData.userId, // 임시로 userId를 이름으로 사용
+        userType: formData.userId === 'admin' ? 'ADMIN' : 'USER',
+        onboardingCompleted: true
+      };
+      localStorage.setItem('userInfo', JSON.stringify(userInfo));
 
       // 대시보드로 리다이렉트
       router.push('/dashboard');

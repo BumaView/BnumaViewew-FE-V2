@@ -31,6 +31,7 @@ export type SessionBySessionQuestionAnswerRecordsResponse = {
 
 export type FinishedMockInterviewResponse = {
     interviewId: number;
+    status: 'in_progress' | 'completed';
     summary: {
         totalQuestions: number;
         totalTimeSpent: number;
@@ -41,7 +42,13 @@ export type FinishedMockInterviewResponse = {
             timeSpent: number;
             recordedAt: string;
         }[]
-    }
+    };
+    feedback: string;
+    questions: {
+        id: number;
+        question: string;
+    }[];
+    createdAt: string;
 };
 
 // ===== Session 에러 관련 타입 =====

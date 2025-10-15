@@ -2,15 +2,14 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import Header from '@/components/Header';
-import { questionService } from '@/services/questionService';
 import { sessionService } from '@/services/sessionService';
 import { bookmarkService } from '@/services/bookmarkService';
-import { question, session } from '@/types';
+import { mockQuestions } from '@/lib/data';
+import { question } from '@/types';
+import { UserInfo } from '@/lib/types';
 
 const PracticePage = () => {
-  const { data: session, status } = useSession();
   const [questions, setQuestions] = useState<question.Question[]>([]);
   const [selectedQuestions, setSelectedQuestions] = useState<number[]>([]);
   const [filters, setFilters] = useState({
@@ -23,6 +22,7 @@ const PracticePage = () => {
   const [isStarting, setIsStarting] = useState(false);
   const [bookmarkedQuestions, setBookmarkedQuestions] = useState<Set<number>>(new Set());
   const [isBookmarking, setIsBookmarking] = useState(false);
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [showAdvancedFilter, setShowAdvancedFilter] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState({
     category: '',
@@ -31,48 +31,53 @@ const PracticePage = () => {
   });
   const router = useRouter();
 
-  const loadQuestions = useCallback(async () => {
+  const loadQuestions = useCallback(() => {
     try {
+      console.log('Loading questions with filters:', filters);
+      
+      // mockQuestions를 API 형식으로 변환
+      let filteredQuestions = mockQuestions.map(q => ({
+        id: q.id,
+        question: q.title, // title을 question으로 매핑
+        company: q.company || '기타',
+        year: 2024, // 기본값
+        category: q.category
+      }));
+
+      // 필터 적용
       if (filters.search) {
-        const data = await questionService.searchQuestions(filters.search, 0, 100);
-        setQuestions(data.questions);
-      } else if (filters.company || filters.year || filters.category) {
-        const data = await questionService.searchQuestionByCategory({
-          company: filters.company || '',
-          year: filters.year ? parseInt(filters.year) : 0,
-          category: filters.category || ''
-        }, 0, 100);
-        setQuestions(data.questions);
-      } else {
-        const data = await questionService.searchAllQuestions(0, 100);
-        setQuestions(data.questions);
+        filteredQuestions = filteredQuestions.filter(q => 
+          q.question.toLowerCase().includes(filters.search.toLowerCase()) ||
+          q.company.toLowerCase().includes(filters.search.toLowerCase()) ||
+          q.category.toLowerCase().includes(filters.search.toLowerCase())
+        );
       }
+      
+      if (filters.company) {
+        filteredQuestions = filteredQuestions.filter(q => 
+          q.company.toLowerCase().includes(filters.company.toLowerCase())
+        );
+      }
+      
+      if (filters.category) {
+        filteredQuestions = filteredQuestions.filter(q => 
+          q.category.toLowerCase().includes(filters.category.toLowerCase())
+        );
+      }
+      
+      if (filters.year) {
+        filteredQuestions = filteredQuestions.filter(q => 
+          q.year === parseInt(filters.year)
+        );
+      }
+
+      console.log('Filtered questions:', filteredQuestions);
+      setQuestions(filteredQuestions);
     } catch (error) {
       console.error('Load questions error:', error);
     }
   }, [filters]);
 
-  useEffect(() => {
-    const loadData = async () => {
-      if (status === 'loading') return;
-      
-      if (status === 'unauthenticated') {
-        router.push('/login');
-        return;
-      }
-
-      try {
-        await Promise.all([loadQuestions(), loadBookmarks()]);
-      } catch (error) {
-        console.error('Load data error:', error);
-        router.push('/login');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadData();
-  }, [status, router, loadQuestions]);
 
   const loadBookmarks = async () => {
     try {
@@ -90,10 +95,34 @@ const PracticePage = () => {
   };
 
   useEffect(() => {
-    if (session) {
-      loadQuestions();
-    }
-  }, [session, loadQuestions]);
+    const loadData = async () => {
+      // localStorage에서 토큰 확인
+      const accessToken = localStorage.getItem('accessToken');
+      
+      if (!accessToken) {
+        router.push('/login');
+        return;
+      }
+
+      // localStorage에서 사용자 정보 가져오기
+      const storedUserInfo = localStorage.getItem('userInfo');
+      if (storedUserInfo) {
+        setUserInfo(JSON.parse(storedUserInfo));
+      }
+
+      try {
+        loadQuestions();
+        await loadBookmarks();
+      } catch (error) {
+        console.error('Load data error:', error);
+        router.push('/login');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
+  }, [loadQuestions, router]);
 
   const handleFilterChange = (key: string, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
@@ -118,14 +147,15 @@ const PracticePage = () => {
   const startRandomInterview = async () => {
     setIsStarting(true);
     try {
-      await questionService.randomlySelectInterviewQuestion();
+      console.log('Starting random interview...');
       
       const sessionData = await sessionService.createMockInterview({
         title: '랜덤 면접',
         category: '기술면접',
-        count: 1
+        count: 5
       });
       
+      console.log('Session created:', sessionData);
       router.push(`/practice/${sessionData.id}`);
     } catch (error: unknown) {
       console.error('Start random interview error:', error);
@@ -158,14 +188,15 @@ const PracticePage = () => {
   const startAdvancedRandomInterview = async () => {
     setIsStarting(true);
     try {
-      await questionService.randomlySelectInterviewQuestionByFilters(advancedFilters);
+      console.log('Starting advanced random interview with filters:', advancedFilters);
       
       const sessionData = await sessionService.createMockInterview({
         title: '필터링된 면접',
         category: advancedFilters.category || '기술면접',
-        count: 1
+        count: 5
       });
       
+      console.log('Advanced session created:', sessionData);
       router.push(`/practice/${sessionData.id}`);
     } catch (error: unknown) {
       console.error('Advanced random interview error:', error);
@@ -215,12 +246,7 @@ const PracticePage = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* 네비게이션 */}
-      <Header userInfo={{
-        userId: session?.user?.id || 0,
-        name: session?.user?.name || '',
-        userType: session?.user?.userType || 'user',
-        onboardingCompleted: session?.user?.onboardingCompleted || false
-      }} />
+      <Header userInfo={userInfo} />
 
       {/* 메인 콘텐츠 */}
       <div className="max-w-7xl mx-auto px-6 py-8">
@@ -294,13 +320,28 @@ const PracticePage = () => {
               </div>
             </div>
 
-            <div className="flex justify-end">
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => {
+                  // 필터 적용
+                  setFilters({
+                    company: advancedFilters.company,
+                    year: advancedFilters.year.toString(),
+                    category: advancedFilters.category,
+                    search: ''
+                  });
+                  setShowAdvancedFilter(false);
+                }}
+                className="bg-gray-600 text-white px-6 py-3 rounded-sm text-sm font-medium hover:bg-gray-700 transition-colors"
+              >
+                필터 적용
+              </button>
               <button
                 onClick={startAdvancedRandomInterview}
                 disabled={isStarting}
                 className="bg-blue-600 text-white px-6 py-3 rounded-sm text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isStarting ? '시작 중...' : '고급 필터로 면접 시작'}
+                {isStarting ? '시작 중...' : '필터로 면접 시작'}
               </button>
             </div>
           </div>
@@ -383,7 +424,12 @@ const PracticePage = () => {
 
         {/* 질문 목록 */}
         <div className="space-y-4">
-          {questions.map((question) => (
+          {questions.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-gray-500">질문을 불러오는 중입니다...</p>
+            </div>
+          ) : (
+            questions.map((question) => (
             <div
               key={question.id}
               className={`bg-white border rounded-sm p-6 cursor-pointer transition-colors ${
@@ -442,7 +488,7 @@ const PracticePage = () => {
                 </div>
               </div>
             </div>
-          ))}
+          )))}
         </div>
 
         {questions.length === 0 && (

@@ -2,24 +2,44 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import Header from '@/components/Header';
 import { dashboardService } from '@/services/dashboardService';
 import { dashboard } from '@/types';
+import { UserInfo } from '@/lib/types';
 
 const DashboardPage = () => {
-  const { data: session, status } = useSession();
   const [dashboardData, setDashboardData] = useState<dashboard.DashboardResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const router = useRouter();
+
+  // 버튼 클릭 핸들러들
+  const handleStartPractice = () => {
+    router.push('/practice');
+  };
+
+  const handleViewReports = () => {
+    router.push('/reports');
+  };
+
+  const handleViewMaterials = () => {
+    router.push('/materials');
+  };
 
   useEffect(() => {
     const loadDashboardData = async () => {
-      if (status === 'loading') return;
+      // localStorage에서 토큰 확인
+      const accessToken = localStorage.getItem('accessToken');
       
-      if (status === 'unauthenticated') {
+      if (!accessToken) {
         router.push('/login');
         return;
+      }
+
+      // localStorage에서 사용자 정보 가져오기
+      const storedUserInfo = localStorage.getItem('userInfo');
+      if (storedUserInfo) {
+        setUserInfo(JSON.parse(storedUserInfo));
       }
 
       try {
@@ -34,7 +54,7 @@ const DashboardPage = () => {
     };
 
     loadDashboardData();
-  }, [status, router]);
+  }, [router]);
 
   if (isLoading) {
     return (
@@ -47,25 +67,20 @@ const DashboardPage = () => {
     );
   }
 
-  if (!session || !dashboardData) {
+  if (!dashboardData) {
     return null; // 리다이렉트 중
   }
   return (
     <div className="min-h-screen bg-gray-50">
       {/* 네비게이션 */}
-      <Header userInfo={{
-        userId: session.user.id,
-        name: session.user.name || '',
-        userType: session.user.userType,
-        onboardingCompleted: session.user.onboardingCompleted
-      }} />
+      <Header userInfo={userInfo} />
 
       {/* 메인 콘텐츠 */}
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* 헤더 */}
         <div className="mb-8">
           <h1 className="text-2xl font-light text-gray-900 mb-2">
-            안녕하세요, {session.user.name}님
+            안녕하세요, {userInfo?.name || '사용자'}님
           </h1>
           <p className="text-gray-600">
             오늘도 면접 준비를 시작해보세요.
@@ -137,19 +152,28 @@ const DashboardPage = () => {
             <div className="bg-white rounded-sm border border-gray-100 p-6">
               <h2 className="text-lg font-light text-gray-900 mb-4">빠른 시작</h2>
               <div className="space-y-3">
-                <button className="w-full bg-gray-900 text-white py-3 px-4 rounded-sm text-sm font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-2">
+                <button 
+                  onClick={handleStartPractice}
+                  className="w-full bg-gray-900 text-white py-3 px-4 rounded-sm text-sm font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+                >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   면접 연습 시작
                 </button>
-                <button className="w-full border border-gray-200 text-gray-700 py-3 px-4 rounded-sm text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
+                <button 
+                  onClick={handleViewReports}
+                  className="w-full border border-gray-200 text-gray-700 py-3 px-4 rounded-sm text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                   </svg>
                   분석 리포트 보기
                 </button>
-                <button className="w-full border border-gray-200 text-gray-700 py-3 px-4 rounded-sm text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
+                <button 
+                  onClick={handleViewMaterials}
+                  className="w-full border border-gray-200 text-gray-700 py-3 px-4 rounded-sm text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                   </svg>

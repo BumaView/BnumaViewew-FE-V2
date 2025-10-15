@@ -1,0 +1,149 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// 사용자 모델
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  name      String?
+  username  String   @unique
+  password  String?
+  userType  String   @default("USER") // USER, ADMIN
+  image     String?
+  
+  // 온보딩 정보
+  age                Int?
+  desiredField       String?
+  desiredCompany     String?
+  experience         String?
+  education          String?
+  skills             String? // JSON 문자열로 저장
+  onboardingCompleted Boolean @default(false)
+  
+  // OAuth 정보
+  googleId           String? @unique
+  refreshToken       String?
+  
+  // 타임스탬프
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // 관계
+  questions     Question[]
+  bookmarks     Bookmark[]
+  interviews    Interview[]
+  bookmarkFolders BookmarkFolder[]
+  
+  @@map("users")
+}
+
+// 질문 모델
+model Question {
+  id          Int      @id @default(autoincrement())
+  question    String
+  company     String?
+  year        Int?
+  category    String
+  field       String?
+  tag         String?
+  authorId    Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // 관계
+  author      User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  bookmarks   Bookmark[]
+  interviewQuestions InterviewQuestion[]
+  
+  @@map("questions")
+}
+
+// 북마크 폴더 모델
+model BookmarkFolder {
+  id        Int      @id @default(autoincrement())
+  name      String
+  userId    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // 관계
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookmarks Bookmark[]
+  
+  @@map("bookmark_folders")
+}
+
+// 북마크 모델
+model Bookmark {
+  id         Int      @id @default(autoincrement())
+  questionId Int
+  folderId   Int
+  userId     Int
+  createdAt  DateTime @default(now())
+  
+  // 관계
+  question   Question       @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  folder     BookmarkFolder @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([questionId, userId])
+  @@map("bookmarks")
+}
+
+// 면접 모델
+model Interview {
+  id          Int      @id @default(autoincrement())
+  title       String
+  category    String
+  status      String   @default("in_progress") // in_progress, completed
+  userId      Int
+  totalTime   Int?     // 총 소요 시간 (초)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // 관계
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questions   InterviewQuestion[]
+  answers     InterviewAnswer[]
+  
+  @@map("interviews")
+}
+
+// 면접-질문 연결 모델
+model InterviewQuestion {
+  id          Int @id @default(autoincrement())
+  interviewId Int
+  questionId  Int
+  order       Int
+  
+  // 관계
+  interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  question    Question  @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  
+  @@unique([interviewId, questionId])
+  @@map("interview_questions")
+}
+
+// 면접 답변 모델
+model InterviewAnswer {
+  id          Int      @id @default(autoincrement())
+  interviewId Int
+  questionId  Int
+  answer      String
+  timeSpent   Int      // 소요 시간 (초)
+  createdAt   DateTime @default(now())
+  
+  // 관계
+  interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  
+  @@map("interview_answers")
+}

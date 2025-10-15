@@ -45,9 +45,9 @@ export const sessionService = {
     },
 
     // 면접 완료
-    finishInterview: async (interviewId: number): Promise<session.FinishedMockInterviewResponse> => {
+    finishInterview: async (interviewId: number, totalTime: number = 0): Promise<session.FinishedMockInterviewResponse> => {
         try {
-            const response = await api.post(`/api/interviews/${interviewId}/finish`);
+            const response = await api.post(`/api/interviews/${interviewId}/finish`, { totalTime });
             return response.data;
         } catch (error) {
             throw handleApiError(error);

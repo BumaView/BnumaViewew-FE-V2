@@ -48,7 +48,7 @@ export const bookmarkService = {
     // 북마크 해제
     unbookmarkingQuestion: async (bookmarkId: number): Promise<void> => {
         try {
-            await api.delete(`/api/bookmarks/${bookmarkId}`);
+            await api.delete(`/api/bookmarks?bookmarkId=${bookmarkId}`);
         } catch (error) {
             throw handleApiError(error);
         }

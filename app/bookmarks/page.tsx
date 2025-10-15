@@ -3,29 +3,36 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import { bookmarkService } from '@/services/bookmarkService';
 import { bookmark } from '@/types';
+import { UserInfo } from '@/lib/types';
 
 // 타입은 이미 types/bookmark.ts에 정의되어 있음
 
 const BookmarksPage = () => {
-  const { data: session, status } = useSession();
   const [folders, setFolders] = useState<bookmark.GetBookmarkedFolderListResponse>([]);
   const [selectedFolder, setSelectedFolder] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [folderName, setFolderName] = useState('');
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const router = useRouter();
 
   useEffect(() => {
     const loadData = async () => {
-      if (status === 'loading') return;
+      // localStorage에서 토큰 확인
+      const accessToken = localStorage.getItem('accessToken');
       
-      if (status === 'unauthenticated') {
+      if (!accessToken) {
         router.push('/login');
         return;
+      }
+
+      // localStorage에서 사용자 정보 가져오기
+      const storedUserInfo = localStorage.getItem('userInfo');
+      if (storedUserInfo) {
+        setUserInfo(JSON.parse(storedUserInfo));
       }
 
       try {
@@ -40,7 +47,7 @@ const BookmarksPage = () => {
     };
 
     loadData();
-  }, [status, router]);
+  }, [router]);
 
   const loadFolders = async () => {
     try {
@@ -139,7 +146,7 @@ const BookmarksPage = () => {
                   면접 연습
                 </Link>
                 <span className="text-sm text-gray-900 font-medium">북마크</span>
-                {session?.user?.userType === 'Admin' && (
+                {userInfo?.userType === 'Admin' && (
                   <Link href="/admin" className="text-sm text-blue-600 hover:text-blue-800 transition-colors">
                     관리자
                   </Link>
@@ -149,7 +156,7 @@ const BookmarksPage = () => {
             <div className="flex items-center space-x-4">
               <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
                 <span className="text-xs text-gray-600 font-medium">
-                  {session?.user?.name?.charAt(0) || 'U'}
+                  {userInfo?.name?.charAt(0) || 'U'}
                 </span>
               </div>
             </div>

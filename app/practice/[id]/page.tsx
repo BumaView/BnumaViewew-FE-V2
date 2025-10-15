@@ -3,37 +3,33 @@
 import { useState, useEffect, useRef, use, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { BaseURL } from '@/lib/util';
+import { sessionService } from '@/services/sessionService';
+import { bookmarkService } from '@/services/bookmarkService';
 
 interface Question {
   id: number;
-  title: string;
-  content: string;
-  category: string;
-  difficulty: 'easy' | 'medium' | 'hard';
-  field: string;
-  company?: string;
-  tags: string[];
+  question: string;
 }
 
 interface InterviewAnswer {
   questionId: number;
   answer: string;
   timeSpent: number;
-  score?: number;
-  feedback?: string;
+  recordedAt: string;
 }
 
 interface InterviewSession {
-  id: number;
-  userId: number;
+  interviewId: number;
+  status: 'in_progress' | 'completed';
+  summary: {
+    totalQuestions: number;
+    totalTimeSpent: number;
+    average: number;
+    answers: InterviewAnswer[];
+  };
+  feedback: string;
   questions: Question[];
-  startedAt: string;
-  finishedAt?: string;
-  status: 'in_progress' | 'completed' | 'abandoned';
-  answers: InterviewAnswer[];
-  score?: number;
-  feedback?: string;
+  createdAt: string;
 }
 
 const InterviewSessionPage = ({ params }: { params: Promise<{ id: string }> | { id: string } }) => {
@@ -57,45 +53,28 @@ const InterviewSessionPage = ({ params }: { params: Promise<{ id: string }> | { 
 
   const loadSession = useCallback(async () => {
     try {
-      const token = localStorage.getItem('accessToken');
       console.log('Loading session with ID:', resolvedParams.id);
-      console.log('Token exists:', token ? 'yes' : 'no');
       
-      const response = await fetch(`${BaseURL}/user/interviews/${resolvedParams.id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      console.log('Load session response status:', response.status);
-
-      if (response.ok) {
-        const sessionData = await response.json();
-        console.log('Session data loaded:', sessionData);
-        
-        if (!sessionData.questions || sessionData.questions.length === 0) {
-          console.error('Session has no questions');
-          alert('면접 세션에 질문이 없습니다.');
-          router.push('/practice');
-          return;
-        }
-        
-        setSession(sessionData);
-        
-        // 이미 답변한 질문이 있다면 다음 질문으로 이동
-        if (sessionData.answers.length > 0) {
-          setCurrentQuestionIndex(Math.min(sessionData.answers.length, sessionData.questions.length - 1));
-        }
-        
-        // 완료된 면접이라면 결과 페이지로 이동
-        if (sessionData.status === 'completed') {
-          router.push(`/practice/${resolvedParams.id}/result`);
-        }
-      } else {
-        const errorData = await response.json();
-        console.error('Load session error:', errorData);
-        alert(`면접 세션을 불러올 수 없습니다: ${errorData.message || '알 수 없는 오류'}`);
+      const sessionData = await sessionService.getInterviewById(parseInt(resolvedParams.id));
+      console.log('Session data loaded:', sessionData);
+      
+      if (!sessionData.questions || sessionData.questions.length === 0) {
+        console.error('Session has no questions');
+        alert('면접 세션에 질문이 없습니다.');
         router.push('/practice');
+        return;
+      }
+      
+      setSession(sessionData);
+      
+      // 이미 답변한 질문이 있다면 다음 질문으로 이동
+      if (sessionData.summary.answers && sessionData.summary.answers.length > 0) {
+        setCurrentQuestionIndex(Math.min(sessionData.summary.answers.length, sessionData.questions.length - 1));
+      }
+      
+      // 완료된 면접이라면 결과 페이지로 이동
+      if (sessionData.status === 'completed') {
+        router.push(`/practice/${resolvedParams.id}/result`);
       }
     } catch (error) {
       console.error('Load session error:', error);
@@ -165,18 +144,14 @@ const InterviewSessionPage = ({ params }: { params: Promise<{ id: string }> | { 
 
   const loadBookmarks = async () => {
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${BaseURL}/api/bookmarks`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const folders = await bookmarkService.getBookmarkFolders();
+      const bookmarkedIds = new Set<number>();
+      folders.forEach(folder => {
+        folder.bookmarks.forEach(bookmark => {
+          bookmarkedIds.add(bookmark.questionId);
+        });
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        const bookmarkedIds = new Set<number>(data.bookmarks.map((b: { questionId: number }) => b.questionId));
-        setBookmarkedQuestions(bookmarkedIds);
-      }
+      setBookmarkedQuestions(bookmarkedIds);
     } catch (error) {
       console.error('Load bookmarks error:', error);
     }
@@ -188,34 +163,21 @@ const InterviewSessionPage = ({ params }: { params: Promise<{ id: string }> | { 
     setIsSubmitting(true);
     try {
       const timeSpent = currentTime; // 타이머에서 가져온 시간 사용
-      const token = localStorage.getItem('accessToken');
       
-      const response = await fetch(`${BaseURL}/user/interviews/${session.id}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          questionId: session.questions[currentQuestionIndex].id,
-          answer: currentAnswer,
-          timeSpent,
-          totalTime: totalTime // 총 시간도 함께 전송
-        })
+      await sessionService.recordAnswer(session.interviewId, {
+        questionId: session.questions[currentQuestionIndex].id,
+        answer: currentAnswer,
+        timeSpent
       });
 
-      if (response.ok) {
-        const updatedSession = await response.json();
-        setSession(updatedSession);
-        setCurrentAnswer('');
-        
-        // 다음 질문으로 이동
-        if (currentQuestionIndex < session.questions.length - 1) {
-          setCurrentQuestionIndex(prev => prev + 1);
-        } else {
-          // 모든 질문에 답변했다면 면접 종료
-          finishInterview();
-        }
+      setCurrentAnswer('');
+      
+      // 다음 질문으로 이동
+      if (currentQuestionIndex < session.questions.length - 1) {
+        setCurrentQuestionIndex(prev => prev + 1);
+      } else {
+        // 모든 질문에 답변했다면 면접 종료
+        finishInterview();
       }
     } catch (error) {
       console.error('Submit answer error:', error);
@@ -237,21 +199,8 @@ const InterviewSessionPage = ({ params }: { params: Promise<{ id: string }> | { 
 
     setIsFinishing(true);
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${BaseURL}/user/interviews/${session.id}/finish`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          totalTime: totalTime
-        })
-      });
-
-      if (response.ok) {
-        router.push(`/practice/${session.id}/result`);
-      }
+      await sessionService.finishInterview(session.interviewId, totalTime);
+      router.push(`/practice/${session.interviewId}/result`);
     } catch (error) {
       console.error('Finish interview error:', error);
     } finally {
@@ -272,28 +221,11 @@ const InterviewSessionPage = ({ params }: { params: Promise<{ id: string }> | { 
     if (currentQuestionIndex > 0) {
       setCurrentQuestionIndex(prev => prev - 1);
       // 이전 답변이 있다면 불러오기
-      const previousAnswer = session?.answers.find(a => a.questionId === session.questions[currentQuestionIndex - 1].id);
+      const previousAnswer = session?.summary.answers.find(a => a.questionId === session.questions[currentQuestionIndex - 1].id);
       setCurrentAnswer(previousAnswer?.answer || '');
     }
   };
 
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case 'easy': return 'text-green-600 bg-green-50';
-      case 'medium': return 'text-yellow-600 bg-yellow-50';
-      case 'hard': return 'text-red-600 bg-red-50';
-      default: return 'text-gray-600 bg-gray-50';
-    }
-  };
-
-  const getDifficultyText = (difficulty: string) => {
-    switch (difficulty) {
-      case 'easy': return '쉬움';
-      case 'medium': return '보통';
-      case 'hard': return '어려움';
-      default: return difficulty;
-    }
-  };
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -306,41 +238,23 @@ const InterviewSessionPage = ({ params }: { params: Promise<{ id: string }> | { 
     
     setIsBookmarking(true);
     try {
-      const token = localStorage.getItem('accessToken');
       const isBookmarked = bookmarkedQuestions.has(questionId);
       
       if (isBookmarked) {
         // 북마크 제거
-        const response = await fetch(`${BaseURL}/api/bookmarks`, {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ questionId })
+        await bookmarkService.unbookmarkingQuestion(questionId);
+        setBookmarkedQuestions(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(questionId);
+          return newSet;
         });
-        
-        if (response.ok) {
-          setBookmarkedQuestions(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(questionId);
-            return newSet;
-          });
-        }
       } else {
         // 북마크 추가
-        const response = await fetch(`${BaseURL}/api/bookmarks`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ questionId })
+        await bookmarkService.bookmarkingQuestion({
+          questionId: questionId,
+          folderId: 1 // 기본 폴더 ID
         });
-        
-        if (response.ok) {
-          setBookmarkedQuestions(prev => new Set([...prev, questionId]));
-        }
+        setBookmarkedQuestions(prev => new Set([...prev, questionId]));
       }
     } catch (error) {
       console.error('Bookmark toggle error:', error);
@@ -375,7 +289,7 @@ const InterviewSessionPage = ({ params }: { params: Promise<{ id: string }> | { 
 
   const currentQuestion = session.questions[currentQuestionIndex];
   const progress = ((currentQuestionIndex + 1) / session.questions.length) * 100;
-  const answeredCount = session.answers.length;
+  const answeredCount = session.summary.answers.length;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -430,20 +344,9 @@ const InterviewSessionPage = ({ params }: { params: Promise<{ id: string }> | { 
           <div className="mb-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <span className={`px-3 py-1 text-sm rounded-full ${getDifficultyColor(currentQuestion.difficulty)}`}>
-                  {getDifficultyText(currentQuestion.difficulty)}
-                </span>
                 <span className="px-3 py-1 text-sm bg-gray-100 text-gray-600 rounded-full">
-                  {currentQuestion.category}
+                  면접 질문
                 </span>
-                <span className="px-3 py-1 text-sm bg-blue-100 text-blue-600 rounded-full">
-                  {currentQuestion.field}
-                </span>
-                {currentQuestion.company && (
-                  <span className="px-3 py-1 text-sm bg-black text-white rounded-full">
-                    {currentQuestion.company}
-                  </span>
-                )}
               </div>
               
               {/* 북마크 버튼 */}
@@ -466,23 +369,15 @@ const InterviewSessionPage = ({ params }: { params: Promise<{ id: string }> | { 
             </div>
             
             <h2 className="text-2xl font-light text-gray-900 mb-4">
-              {currentQuestion.title}
+              {currentQuestion.question}
             </h2>
             
             <div className="bg-gray-50 rounded-sm p-6 mb-6">
               <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-                {currentQuestion.content}
+                {currentQuestion.question}
               </p>
             </div>
 
-            {/* 태그 */}
-            <div className="flex gap-2 flex-wrap">
-              {currentQuestion.tags.map((tag, index) => (
-                <span key={index} className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                  {tag}
-                </span>
-              ))}
-            </div>
           </div>
 
           {/* 답변 입력 */}
@@ -553,7 +448,7 @@ const InterviewSessionPage = ({ params }: { params: Promise<{ id: string }> | { 
           <h3 className="text-sm font-medium text-gray-700 mb-3">질문 목록</h3>
           <div className="flex gap-2 flex-wrap">
             {session.questions.map((question, index) => {
-              const isAnswered = session.answers.some(a => a.questionId === question.id);
+              const isAnswered = session.summary.answers.some(a => a.questionId === question.id);
               const isCurrent = index === currentQuestionIndex;
               
               return (

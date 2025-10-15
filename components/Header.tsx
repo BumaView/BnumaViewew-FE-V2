@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { BaseURL } from "@/lib/util";
+import { authService } from "@/services/authService";
 import { UserInfo } from "@/lib/types";
 
 export default function Header({ userInfo }: { userInfo: UserInfo | null }) {
@@ -14,37 +14,23 @@ export default function Header({ userInfo }: { userInfo: UserInfo | null }) {
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
-      const token = localStorage.getItem('accessToken');
-      if (!token) {
+      const refreshToken = localStorage.getItem('refreshToken');
+      if (!refreshToken) {
         // 토큰이 없으면 바로 로그인 페이지로 이동
         router.push('/login');
         return;
       }
 
-      const response = await fetch(`${BaseURL}/api/auth/logout`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        // 로컬 스토리지에서 토큰 제거
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('userInfo');
-        
-        // 로그인 페이지로 이동
-        router.push('/login');
-      } else {
-        console.error('로그아웃 실패');
-        // 실패해도 토큰은 제거하고 로그인 페이지로 이동
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('userInfo');
-        router.push('/login');
-      }
+      // authService를 사용하여 로그아웃
+      await authService.logout({ refreshToken });
+      
+      // 로컬 스토리지에서 토큰 제거
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('userInfo');
+      
+      // 로그인 페이지로 이동
+      router.push('/login');
     } catch (error) {
       console.error('로그아웃 중 오류:', error);
       // 오류가 발생해도 토큰은 제거하고 로그인 페이지로 이동
@@ -76,7 +62,7 @@ export default function Header({ userInfo }: { userInfo: UserInfo | null }) {
                 <Link href="/bookmarks" className={pathname === "/bookmarks" ? "text-sm text-gray-900 font-medium" : "text-sm text-gray-500 hover:text-gray-900 transition-colors"}>
                   북마크
                 </Link>
-                {userInfo?.userType === 'Admin' && (
+                {userInfo?.userType === 'ADMIN' && (
                   <Link href="/admin" className={pathname === "/admin" ? "text-sm text-blue-600 font-medium" : "text-sm text-blue-600 hover:text-blue-800 transition-colors"}>
                     관리자
                   </Link>

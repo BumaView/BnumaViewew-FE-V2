@@ -44,7 +44,8 @@ export const useSessionQueries = () => {
     // 면접 완료 뮤테이션
     const useFinishInterview = () => {
         return useMutation({
-            mutationFn: sessionService.finishInterview,
+            mutationFn: ({ interviewId, totalTime }: { interviewId: number; totalTime?: number }) => 
+                sessionService.finishInterview(interviewId, totalTime),
             onSuccess: () => {
                 queryClient.invalidateQueries({ queryKey: ["sessions"] });
                 queryClient.removeQueries({ queryKey: ["sessions", "current"] });

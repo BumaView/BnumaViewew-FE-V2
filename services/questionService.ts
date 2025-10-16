@@ -3,6 +3,13 @@ import { question } from "@/types";
 import { api } from "@/lib/axios";
 import { handleApiError } from "@/lib/errorHandler";
 
+interface Filters {
+    category: string;
+    company: string;
+    year: string;
+    search: string;
+}
+
 //==== Question Service ====
 export const questionService = {
     // 전체 질문 목록 조회 (사용자용)
@@ -17,11 +24,13 @@ export const questionService = {
         }
     },
 
-    // 질문 검색
-    searchQuestions: async (query: string, page = 0, size = 10): Promise<question.SearchAllQuestionResponse> => {
+    // 카테고리 검색
+    searchCategories: async (filters: Filters): Promise<question.SearchAllQuestionResponse> => {
         try {
-            const response = await api.get("/api/questions/search", {
-                params: { query, page, size }
+            const response = await api.post("/api/questions/search", {
+                'category': filters.category ? filters.category : null,
+                'company': filters.company ? filters.company : null,
+                'year': filters.year ? filters.year : null,
             });
             return response.data;
         } catch (error) {
@@ -29,7 +38,7 @@ export const questionService = {
         }
     },
 
-    // 카테고리별 질문 조회
+    // TODO: 질문 검색으로 변경
     searchQuestionByCategory: async (params: question.SearchQuestionByCategoryRequest, page = 0, size = 10): Promise<question.SearchQuestionByCategoryResponse> => {
         try {
             const response = await api.get("/api/questions/search", {

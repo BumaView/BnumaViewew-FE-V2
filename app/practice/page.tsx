@@ -235,6 +235,13 @@ const PracticePage = () => {
     try {
       console.log('Starting random interview...');
       
+      // 카테고리 유효성 검사
+      if (filters.category && !availableCategories.includes(filters.category)) {
+        alert('유효하지 않은 카테고리입니다. 목록에서 선택해주세요.');
+        setIsStarting(false);
+        return;
+      }
+      
       // 토큰 확인 및 유효성 검사
       const token = localStorage.getItem('accessToken');
       if (!token) {
@@ -248,7 +255,7 @@ const PracticePage = () => {
       // 백엔드에서 랜덤 면접 세션 생성
       const sessionData = await sessionService.createMockInterview({
         title: '랜덤 면접',
-        category: '기술면접',
+        category: filters.category || '전체', // 현재 필터의 카테고리 사용, 없으면 '전체'
         count: 5 // 5개 질문
       });
       
@@ -303,6 +310,13 @@ const PracticePage = () => {
 
     setIsStarting(true);
     try {
+      // 카테고리 유효성 검사
+      if (filters.category && !availableCategories.includes(filters.category)) {
+        alert('유효하지 않은 카테고리입니다. 목록에서 선택해주세요.');
+        setIsStarting(false);
+        return;
+      }
+      
       // 토큰 확인
       const token = localStorage.getItem('accessToken');
       if (!token) {
@@ -313,7 +327,7 @@ const PracticePage = () => {
 
       const sessionData = await sessionService.createMockInterview({
         title: '선택한 질문 면접',
-        category: '기술면접',
+        category: filters.category || '전체', // 현재 필터의 카테고리 사용, 없으면 '전체'
         count: selectedQuestions.length
       });
       
@@ -394,7 +408,7 @@ const PracticePage = () => {
       // 필터링된 질문으로 면접 세션 생성
       const sessionData = await sessionService.createMockInterview({
         title: '필터링된 면접',
-        category: advancedFilters.category || '기술면접',
+        category: advancedFilters.category || '전체', // 고급 필터의 카테고리 사용, 없으면 '전체'
         count: 1 // 랜덤 질문 1개
       });
       

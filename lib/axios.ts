@@ -1,7 +1,7 @@
 import axios from "axios";
 
 export const api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000", // 로컬 API 서버 URL
+    baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080", // 백엔드 API 서버 URL
     timeout: 600000, // 600초로 증가 (Google Sheets 처리 시간 고려)
     headers: {
         "Content-Type": "application/json",
@@ -55,30 +55,66 @@ api.interceptors.response.use(
         console.error('Request Method:', error.config?.method);
         console.error('Full Error Object:', error);
         
-        // 프로덕션에서도 에러를 확인할 수 있도록 alert 추가
+        // 네트워크 에러 처리
+        if (!error.response) {
+            console.error('Network Error - 서버에 연결할 수 없습니다.');
+            console.error('Error message:', error.message);
+            console.error('Error code:', error.code);
+            
+            // 네트워크 에러를 사용자에게 알리기 위해 커스텀 에러 생성
+            const networkError = new Error('서버에 연결할 수 없습니다. 네트워크 연결을 확인해주세요.');
+            (networkError as any).isNetworkError = true;
+            (networkError as any).originalError = error;
+            return Promise.reject(networkError);
+        }
+        
+        // HTTP 상태 코드별 처리
+        const status = error.response.status;
+        const responseData = error.response.data;
+        
+        if (status === 401) {
+            console.error('401 Unauthorized - 인증이 필요합니다.');
+            // 클라이언트 사이드에서만 localStorage 접근
+            if (typeof window !== 'undefined') {
+                localStorage.removeItem("accessToken");
+                localStorage.removeItem("refreshToken");
+                localStorage.removeItem("userInfo");
+                // 로그인 페이지로 리다이렉트
+                window.location.href = "/login";
+            }
+        }
+        
+        if (status === 403) {
+            console.error('403 Forbidden - API 접근 권한이 없습니다.');
+            console.error('Response Data:', responseData);
+            console.error('Request URL:', error.config?.url);
+            console.error('Request Method:', error.config?.method);
+        }
+        
+        if (status === 404) {
+            console.error('404 Not Found - 요청한 리소스를 찾을 수 없습니다.');
+            console.error('Request URL:', error.config?.url);
+        }
+        
+        if (status === 500) {
+            console.error('500 Internal Server Error - 서버 내부 오류가 발생했습니다.');
+            console.error('Response Data:', responseData);
+        }
+        
+        if (status >= 500) {
+            console.error(`${status} Server Error - 서버 오류가 발생했습니다.`);
+            console.error('Response Data:', responseData);
+        }
+        
+        // 프로덕션에서도 에러를 확인할 수 있도록 상세 로그 추가
         if (process.env.NODE_ENV === 'production') {
             console.error('Production Error Details:', {
                 message: error.message,
                 status: error.response?.status,
                 url: error.config?.url,
-                method: error.config?.method
+                method: error.config?.method,
+                responseData: responseData
             });
-        }
-        
-        if (error.response?.status === 401) {
-            // 클라이언트 사이드에서만 localStorage 접근
-            if (typeof window !== 'undefined') {
-                localStorage.removeItem("accessToken");
-                localStorage.removeItem("refreshToken");
-                window.location.href = "/login";
-            }
-        }
-        
-        if (error.response?.status === 403) {
-            console.error('403 Forbidden - 백엔드 API 접근 권한이 없습니다.');
-            console.error('Response Data:', error.response?.data);
-            console.error('Request URL:', error.config?.url);
-            console.error('Request Method:', error.config?.method);
         }
         
         return Promise.reject(error);

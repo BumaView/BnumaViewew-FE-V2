@@ -7,7 +7,7 @@ export const sessionService = {
     // 현재 진행 중인 면접 조회
     getCurrentSession: async (): Promise<session.CreateMockInterviewResponse | null> => {
         try {
-            const response = await api.get("/api/interviews/current");
+            const response = await api.get("/user/interviews/current");
             return response.data;
         } catch (error) {
             throw handleApiError(error);
@@ -63,7 +63,7 @@ export const sessionService = {
     // 면접 히스토리 조회
     getInterviewHistory: async (page = 0, size = 10): Promise<session.FinishedMockInterviewResponse[]> => {
         try {
-            const response = await api.get("/api/interviews", {
+            const response = await api.get("/user/interviews/history", {
                 params: { page, size }
             });
             return response.data;
@@ -75,7 +75,7 @@ export const sessionService = {
     // 특정 면접 조회
     getInterviewById: async (interviewId: number): Promise<session.FinishedMockInterviewResponse> => {
         try {
-            const response = await api.get(`/api/interviews/${interviewId}`);
+            const response = await api.get(`/user/interviews/${interviewId}`);
             return response.data;
         } catch (error) {
             throw handleApiError(error);

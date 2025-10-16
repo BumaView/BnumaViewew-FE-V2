@@ -11,7 +11,41 @@ export const bookmarkService = {
             console.log('Fetching bookmark folders...');
             const response = await api.get("/user/bookmarks");
             console.log('Bookmark folders response:', response.data);
-            return response.data;
+            console.log('Response type:', typeof response.data);
+            console.log('Is array:', Array.isArray(response.data));
+            
+            // 응답 데이터 검증 및 정규화
+            let folders: bookmark.GetBookmarkedFolderListResponse;
+            
+            if (Array.isArray(response.data)) {
+                folders = response.data;
+            } else if (response.data && typeof response.data === 'object' && 'content' in response.data) {
+                folders = response.data.content;
+            } else if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+                folders = response.data.data;
+            } else {
+                console.warn('Unexpected response structure, returning empty array');
+                folders = [];
+            }
+            
+            // 각 폴더의 북마크 배열 검증
+            if (Array.isArray(folders)) {
+                console.log('Array length:', folders.length);
+                folders.forEach((folder, index) => {
+                    console.log(`Folder ${index}:`, folder);
+                    console.log(`Folder ${index} bookmarks:`, folder.bookmarks);
+                    console.log(`Folder ${index} bookmarks type:`, typeof folder.bookmarks);
+                    console.log(`Folder ${index} bookmarks is array:`, Array.isArray(folder.bookmarks));
+                    
+                    // 북마크 배열이 없거나 잘못된 경우 빈 배열로 초기화
+                    if (!Array.isArray(folder.bookmarks)) {
+                        console.warn(`Folder ${index} bookmarks is not an array, initializing as empty array`);
+                        folder.bookmarks = [];
+                    }
+                });
+            }
+            
+            return folders;
         } catch (error) {
             console.error('Get bookmark folders error:', error);
             throw handleApiError(error);
@@ -31,7 +65,7 @@ export const bookmarkService = {
     // 북마크 폴더 생성
     makeBookmarkedFolder: async (data: bookmark.MakeBookmarkedFolderRequest): Promise<bookmark.MakeBookmarkedFolderResponse> => {
         try {
-            const response = await api.post("/user/bookmarks/forders", data);
+            const response = await api.post("/user/bookmarks/folders", data);
             return response.data;
         } catch (error) {
             throw handleApiError(error);
@@ -66,7 +100,7 @@ export const bookmarkService = {
     // 북마크 폴더 삭제
     deleteBookmarkFolder: async (folderId: number): Promise<void> => {
         try {
-            await api.delete(`/user/bookmarks/forders/${folderId}`);
+            await api.delete(`/user/bookmarks/folders/${folderId}`);
         } catch (error) {
             throw handleApiError(error);
         }

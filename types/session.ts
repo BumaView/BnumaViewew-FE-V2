@@ -3,6 +3,11 @@ export type CreateMockInterviewRequest = {
     title: string;
     category: string;
     count: number;
+    questionIds?: number[]; // 특정 질문 ID들로 면접 생성
+    filters?: {
+        company?: string;
+        year?: number;
+    };
 };
 
 export type CreateMockInterviewResponse = {

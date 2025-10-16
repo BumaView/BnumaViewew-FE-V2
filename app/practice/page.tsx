@@ -90,10 +90,20 @@ const PracticePage = () => {
         return;
       }
       
-      folders.forEach(folder => {
-        folder.bookmarks.forEach(bookmark => {
-          bookmarkedIds.add(bookmark.questionId);
-        });
+      console.log('Processing folders:', folders);
+      
+      folders.forEach((folder, folderIndex) => {
+        console.log(`Folder ${folderIndex}:`, folder);
+        console.log(`Folder ${folderIndex} bookmarks:`, folder.bookmarks);
+        
+        if (Array.isArray(folder.bookmarks)) {
+          folder.bookmarks.forEach((bookmark, bookmarkIndex) => {
+            console.log(`Bookmark ${bookmarkIndex}:`, bookmark);
+            bookmarkedIds.add(bookmark.questionId);
+          });
+        } else {
+          console.warn(`Folder ${folderIndex} bookmarks is not an array:`, folder.bookmarks);
+        }
       });
       
       console.log('Bookmarked question IDs:', Array.from(bookmarkedIds));
@@ -184,41 +194,48 @@ const PracticePage = () => {
         return;
       }
       
-      console.log('Token found, attempting to get random question...');
+      console.log('Token found, getting random interview from server...');
       
-      // 백엔드 API를 사용하여 랜덤 질문 가져오기
-      const randomQuestion = await questionService.randomlySelectInterviewQuestion();
-      console.log('Random question received:', randomQuestion);
+      // 백엔드에서 랜덤 면접 세션 생성
+      const sessionData = await sessionService.getRandomQuestion();
+      console.log('Random interview session received:', sessionData);
       
-      // 랜덤 질문으로 면접 세션 생성
-      const sessionData = await sessionService.createMockInterview({
-        title: '랜덤 면접',
-        category: '기술면접',
-        count: 1 // 랜덤 질문 1개
-      });
-      
-      console.log('Session created:', sessionData);
       router.push(`/practice/${sessionData.id}`);
     } catch (error: unknown) {
       console.error('Start random interview error:', error);
       
+      // 네트워크 에러 처리
+      if (error && typeof error === 'object' && 'isNetworkError' in error) {
+        alert('서버에 연결할 수 없습니다. 네트워크 연결을 확인해주세요.');
+        return;
+      }
+      
+      // API 에러 처리
       if (error && typeof error === 'object' && 'response' in error) {
-        const axiosError = error as { response?: { status?: number } };
-        if (axiosError.response?.status === 403) {
+        const axiosError = error as { response?: { status?: number; data?: any } };
+        const status = axiosError.response?.status;
+        const responseData = axiosError.response?.data;
+        
+        if (status === 403) {
           alert('API 접근 권한이 없습니다. 로그인을 다시 시도해주세요.');
           // 토큰 제거 후 로그인 페이지로 이동
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
           localStorage.removeItem('userInfo');
           router.push('/login');
-        } else if (axiosError.response?.status === 401) {
+        } else if (status === 401) {
           alert('로그인이 만료되었습니다. 다시 로그인해주세요.');
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
           localStorage.removeItem('userInfo');
           router.push('/login');
+        } else if (status === 404) {
+          alert('요청한 리소스를 찾을 수 없습니다. 잠시 후 다시 시도해주세요.');
+        } else if (status && status >= 500) {
+          alert('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
         } else {
-          alert('면접 시작에 실패했습니다. 네트워크 연결을 확인해주세요.');
+          const errorMessage = responseData?.message || '면접 시작에 실패했습니다.';
+          alert(errorMessage);
         }
       } else {
         alert('면접 시작에 실패했습니다.');
@@ -251,15 +268,37 @@ const PracticePage = () => {
     } catch (error: unknown) {
       console.error('Start selected interview error:', error);
       
+      // 네트워크 에러 처리
+      if (error && typeof error === 'object' && 'isNetworkError' in error) {
+        alert('서버에 연결할 수 없습니다. 네트워크 연결을 확인해주세요.');
+        return;
+      }
+      
+      // API 에러 처리
       if (error && typeof error === 'object' && 'response' in error) {
-        const axiosError = error as { response?: { status?: number } };
-        if (axiosError.response?.status === 403) {
-          alert('백엔드 서버에 접근할 수 없습니다. 잠시 후 다시 시도해주세요.');
-        } else if (axiosError.response?.status === 401) {
-          alert('로그인이 만료되었습니다. 다시 로그인해주세요.');
+        const axiosError = error as { response?: { status?: number; data?: any } };
+        const status = axiosError.response?.status;
+        const responseData = axiosError.response?.data;
+        
+        if (status === 403) {
+          alert('API 접근 권한이 없습니다. 로그인을 다시 시도해주세요.');
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('userInfo');
           router.push('/login');
+        } else if (status === 401) {
+          alert('로그인이 만료되었습니다. 다시 로그인해주세요.');
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('userInfo');
+          router.push('/login');
+        } else if (status === 404) {
+          alert('요청한 리소스를 찾을 수 없습니다. 잠시 후 다시 시도해주세요.');
+        } else if (status && status >= 500) {
+          alert('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
         } else {
-          alert('면접 시작에 실패했습니다. 네트워크 연결을 확인해주세요.');
+          const errorMessage = responseData?.message || '면접 시작에 실패했습니다.';
+          alert(errorMessage);
         }
       } else {
         alert('면접 시작에 실패했습니다.');
@@ -282,9 +321,9 @@ const PracticePage = () => {
         return;
       }
       
-      console.log('Token found, attempting to get filtered random question...');
+      console.log('Token found, getting filtered random interview from server...');
       
-      // 백엔드 API를 사용하여 필터링된 랜덤 질문 가져오기
+      // 백엔드에서 필터링된 랜덤 질문 가져오기
       const filteredQuestion = await questionService.randomlySelectInterviewQuestionByFilters({
         category: advancedFilters.category,
         company: advancedFilters.company,
@@ -292,7 +331,7 @@ const PracticePage = () => {
       });
       console.log('Filtered question received:', filteredQuestion);
       
-      // 랜덤 질문으로 면접 세션 생성
+      // 필터링된 질문으로 면접 세션 생성
       const sessionData = await sessionService.createMockInterview({
         title: '필터링된 면접',
         category: advancedFilters.category || '기술면접',
@@ -304,23 +343,37 @@ const PracticePage = () => {
     } catch (error: unknown) {
       console.error('Advanced random interview error:', error);
       
+      // 네트워크 에러 처리
+      if (error && typeof error === 'object' && 'isNetworkError' in error) {
+        alert('서버에 연결할 수 없습니다. 네트워크 연결을 확인해주세요.');
+        return;
+      }
+      
+      // API 에러 처리
       if (error && typeof error === 'object' && 'response' in error) {
-        const axiosError = error as { response?: { status?: number } };
-        if (axiosError.response?.status === 403) {
+        const axiosError = error as { response?: { status?: number; data?: any } };
+        const status = axiosError.response?.status;
+        const responseData = axiosError.response?.data;
+        
+        if (status === 403) {
           alert('API 접근 권한이 없습니다. 로그인을 다시 시도해주세요.');
-          // 토큰 제거 후 로그인 페이지로 이동
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
           localStorage.removeItem('userInfo');
           router.push('/login');
-        } else if (axiosError.response?.status === 401) {
+        } else if (status === 401) {
           alert('로그인이 만료되었습니다. 다시 로그인해주세요.');
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
           localStorage.removeItem('userInfo');
           router.push('/login');
+        } else if (status === 404) {
+          alert('요청한 리소스를 찾을 수 없습니다. 잠시 후 다시 시도해주세요.');
+        } else if (status && status >= 500) {
+          alert('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
         } else {
-          alert('면접 시작에 실패했습니다. 네트워크 연결을 확인해주세요.');
+          const errorMessage = responseData?.message || '면접 시작에 실패했습니다.';
+          alert(errorMessage);
         }
       } else {
         alert('면접 시작에 실패했습니다.');
@@ -377,21 +430,39 @@ const PracticePage = () => {
         } catch (error) {
           console.error('Error adding bookmark:', error);
           
+          // 네트워크 에러 처리
+          if (error && typeof error === 'object' && 'isNetworkError' in error) {
+            alert('서버에 연결할 수 없습니다. 네트워크 연결을 확인해주세요.');
+            return;
+          }
+          
+          // API 에러 처리
           if (error && typeof error === 'object' && 'response' in error) {
-            const axiosError = error as { response?: { status?: number; data?: unknown } };
-            if (axiosError.response?.status === 403) {
+            const axiosError = error as { response?: { status?: number; data?: any } };
+            const status = axiosError.response?.status;
+            const responseData = axiosError.response?.data;
+            
+            if (status === 403) {
               alert('API 접근 권한이 없습니다. 로그인을 다시 시도해주세요.');
-            } else if (axiosError.response?.status === 401) {
+              localStorage.removeItem('accessToken');
+              localStorage.removeItem('refreshToken');
+              localStorage.removeItem('userInfo');
+              router.push('/login');
+            } else if (status === 401) {
               alert('로그인이 만료되었습니다. 다시 로그인해주세요.');
               localStorage.removeItem('accessToken');
               localStorage.removeItem('refreshToken');
               localStorage.removeItem('userInfo');
               router.push('/login');
-            } else if (axiosError.response?.status === 409) {
+            } else if (status === 409) {
               alert('이미 북마크된 질문입니다.');
+            } else if (status === 404) {
+              alert('요청한 리소스를 찾을 수 없습니다. 잠시 후 다시 시도해주세요.');
+            } else if (status && status >= 500) {
+              alert('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
             } else {
-              console.error('API Error Response:', axiosError.response?.data);
-              alert('북마크 추가에 실패했습니다. 네트워크 연결을 확인해주세요.');
+              const errorMessage = responseData?.message || '북마크 추가에 실패했습니다.';
+              alert(errorMessage);
             }
           } else {
             alert('북마크 추가에 실패했습니다.');

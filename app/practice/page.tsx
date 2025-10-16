@@ -46,30 +46,16 @@ const PracticePage = () => {
       // 실제 백엔드 API에서 질문 목록 가져오기
       let response;
       
-      if (filters.search) {
-        // 검색어가 있으면 검색 API 사용
-        response = await questionService.searchQuestions(filters.search, 0, 100);
+      if (filters.category || filters.company || filters.year) {
+        // 카테고리 검색
+        response = await questionService.searchCategories(filters);
       } else {
         // 검색어가 없으면 전체 질문 목록 가져오기
         response = await questionService.searchAllQuestions(0, 100);
       }
       
       let questions = response.content || [];
-      
-      // 클라이언트 사이드 필터링 (회사, 연도, 카테고리)
-      if (filters.company) {
-        questions = questions.filter(q => q.company === filters.company);
-      }
 
-      if (filters.year) {
-        questions = questions.filter(q => q.year === parseInt(filters.year));
-      }
-
-      if (filters.category) {
-        questions = questions.filter(q => q.category === filters.category);
-      }
-
-      console.log('Loaded questions from API:', questions);
       setQuestions(questions);
     } catch (error) {
       console.error('Error loading questions:', error);
@@ -609,16 +595,17 @@ const PracticePage = () => {
         <div className="bg-white rounded-sm border border-gray-100 p-6 mb-6">
           <h3 className="text-sm font-medium text-gray-900 mb-4">필터</h3>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/*TODO: 질문 검색 페이지 따로 만들어서 빼기*/}
             <div>
-              <label className="block text-xs text-gray-500 mb-1">검색</label>
-              <input
-                type="text"
-                placeholder="제목이나 내용으로 검색"
-                value={filters.search}
-                onChange={(e) => handleFilterChange('search', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-sm text-black text-sm focus:outline-none focus:border-gray-400"
-              />
-            </div>
+                  <label className="block text-xs text-gray-500 mb-1">검색</label>
+                  <input
+                      type="text"
+                      placeholder="제목이나 내용으로 검색"
+                      value={filters.search}
+                      onChange={(e) => handleFilterChange('search', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-sm text-black text-sm focus:outline-none focus:border-gray-400"
+                  />
+              </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">회사</label>
               <input
@@ -647,8 +634,15 @@ const PracticePage = () => {
                 className="w-full px-3 py-2 border border-gray-200 rounded-sm text-black text-sm focus:outline-none focus:border-gray-400"
               >
                 <option value="">전체</option>
-                <option value="기술면접">기술면접</option>
-                <option value="인성면접">인성면접</option>
+                <option value="back">백엔드</option>
+                <option value="front">프론트엔드</option>
+                <option value="ai">AI</option>
+                <option value="bank">은행</option>
+                <option value="game">게임</option>
+                <option value="design">디자인</option>
+                <option value="security">보안</option>
+                <option value="infra">인프라</option>
+                <option value="embedded">임베디드</option>
               </select>
             </div>
           </div>

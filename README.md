@@ -214,9 +214,9 @@ bun run start
 - `POST /api/questions/search` - 문제 검색
 
 #### 북마크
-- `GET /api/bookmarks` - 북마크 목록
-- `POST /api/bookmarks` - 북마크 추가
-- `DELETE /api/bookmarks/[id]` - 북마크 삭제
+- `GET /user/bookmarks` - 북마크 목록
+- `POST /user/bookmarks` - 북마크 추가
+- `DELETE /user/bookmarks/[id]` - 북마크 삭제
 
 ## 🤝 기여하기
 

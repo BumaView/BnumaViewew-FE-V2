@@ -12,7 +12,9 @@ import { UserInfo } from '@/lib/types';
 const BookmarksPage = () => {
   const [folders, setFolders] = useState<bookmark.GetBookmarkedFolderListResponse>([]);
   const [selectedFolder, setSelectedFolder] = useState<number | null>(null);
+  const [selectedFolderBookmarks, setSelectedFolderBookmarks] = useState<bookmark.GetBookmarkedQuestionsInFolderResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingBookmarks, setIsLoadingBookmarks] = useState(false);
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [folderName, setFolderName] = useState('');
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
@@ -83,6 +85,21 @@ const BookmarksPage = () => {
     }
   };
 
+  const loadFolderBookmarks = async (folderId: number) => {
+    setIsLoadingBookmarks(true);
+    try {
+      console.log(`Loading bookmarks for folder ${folderId}...`);
+      const bookmarksData = await bookmarkService.getBookmarkedQuestionsInFolder(folderId);
+      console.log('Folder bookmarks response:', bookmarksData);
+      setSelectedFolderBookmarks(bookmarksData);
+    } catch (error) {
+      console.error('Load folder bookmarks error:', error);
+      setSelectedFolderBookmarks(null);
+    } finally {
+      setIsLoadingBookmarks(false);
+    }
+  };
+
   const createFolder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!folderName.trim()) return;
@@ -135,6 +152,11 @@ const BookmarksPage = () => {
       
       // 북마크 제거 후 목록 다시 로드
       await loadBookmarkData();
+      
+      // 현재 선택된 폴더가 있다면 해당 폴더의 북마크들도 다시 로드
+      if (selectedFolder !== null) {
+        await loadFolderBookmarks(selectedFolder);
+      }
     } catch (error: unknown) {
       console.error('Remove bookmark error:', error);
       
@@ -168,19 +190,16 @@ const BookmarksPage = () => {
 
   const getFilteredBookmarks = () => {
     if (selectedFolder === null) {
-      // folders가 배열인지 확인하고 flatMap 사용
+      // 전체 북마크: 모든 폴더의 북마크들을 합침
       if (Array.isArray(folders)) {
-        return folders.flatMap(folder => folder.bookmarks);
+        return folders.flatMap(folder => folder.bookmarks || []);
       } else {
         return [];
       }
+    } else {
+      // 특정 폴더의 북마크: selectedFolderBookmarks에서 가져옴
+      return selectedFolderBookmarks?.bookmarks || [];
     }
-    // folders가 배열인지 확인하고 find 사용
-    if (Array.isArray(folders)) {
-      const folder = folders.find(f => f.folderId === selectedFolder);
-      return folder ? folder.bookmarks : [];
-    }
-    return [];
   };
 
   const getTotalBookmarkCount = () => {
@@ -289,7 +308,10 @@ const BookmarksPage = () => {
 
               <div className="space-y-1">
                 <button
-                  onClick={() => setSelectedFolder(null)}
+                  onClick={() => {
+                    setSelectedFolder(null);
+                    setSelectedFolderBookmarks(null);
+                  }}
                   className={`w-full text-left px-3 py-2 rounded-sm text-sm transition-colors ${
                     selectedFolder === null
                       ? 'bg-blue-50 text-blue-700'
@@ -302,11 +324,13 @@ const BookmarksPage = () => {
                   </div>
                 </button>
 
-
                 {Array.isArray(folders) && folders.map((folder) => (
                   <button
                     key={folder.folderId}
-                    onClick={() => setSelectedFolder(folder.folderId)}
+                    onClick={() => {
+                      setSelectedFolder(folder.folderId);
+                      loadFolderBookmarks(folder.folderId);
+                    }}
                     className={`w-full text-left px-3 py-2 rounded-sm text-sm transition-colors ${
                       selectedFolder === folder.folderId
                         ? 'bg-blue-50 text-blue-700'
@@ -315,7 +339,7 @@ const BookmarksPage = () => {
                   >
                     <div className="flex justify-between items-center">
                       <span>{folder.name}</span>
-                      <span className="text-xs text-gray-400">{folder.bookmarks.length}</span>
+                      <span className="text-xs text-gray-400">{folder.bookmarks?.length || 0}</span>
                     </div>
                   </button>
                 ))}
@@ -352,7 +376,13 @@ const BookmarksPage = () => {
 
             {/* 북마크 목록 */}
             <div className="space-y-4">
-              {filteredBookmarks.map((bookmark) => (
+              {isLoadingBookmarks ? (
+                <div className="text-center py-8">
+                  <div className="w-8 h-8 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin mx-auto mb-4"></div>
+                  <p className="text-gray-600">북마크를 불러오는 중...</p>
+                </div>
+              ) : (
+                filteredBookmarks.map((bookmark) => (
                 <div key={bookmark.bookmarkId} className="bg-white border border-gray-100 rounded-sm p-6">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
@@ -384,10 +414,11 @@ const BookmarksPage = () => {
                     </div>
                   </div>
                 </div>
-              ))}
+                ))
+              )}
             </div>
 
-            {filteredBookmarks.length === 0 && (
+            {!isLoadingBookmarks && filteredBookmarks.length === 0 && (
               <div className="text-center py-12">
                 <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

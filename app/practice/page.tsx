@@ -9,6 +9,14 @@ import { questionService } from '@/services/questionService';
 import { question, bookmark } from '@/types';
 import { UserInfo } from '@/lib/types';
 
+// API 에러 응답 타입 정의
+interface ApiErrorResponse {
+  message?: string;
+  error?: string;
+  statusCode?: number;
+  code?: string;
+}
+
 const PracticePage = () => {
   const [questions, setQuestions] = useState<question.Question[]>([]);
   const [selectedQuestions, setSelectedQuestions] = useState<number[]>([]);
@@ -212,7 +220,7 @@ const PracticePage = () => {
       
       // API 에러 처리
       if (error && typeof error === 'object' && 'response' in error) {
-        const axiosError = error as { response?: { status?: number; data?: any } };
+        const axiosError = error as { response?: { status?: number; data?: ApiErrorResponse } };
         const status = axiosError.response?.status;
         const responseData = axiosError.response?.data;
         
@@ -276,7 +284,7 @@ const PracticePage = () => {
       
       // API 에러 처리
       if (error && typeof error === 'object' && 'response' in error) {
-        const axiosError = error as { response?: { status?: number; data?: any } };
+        const axiosError = error as { response?: { status?: number; data?: ApiErrorResponse } };
         const status = axiosError.response?.status;
         const responseData = axiosError.response?.data;
         
@@ -351,7 +359,7 @@ const PracticePage = () => {
       
       // API 에러 처리
       if (error && typeof error === 'object' && 'response' in error) {
-        const axiosError = error as { response?: { status?: number; data?: any } };
+        const axiosError = error as { response?: { status?: number; data?: ApiErrorResponse } };
         const status = axiosError.response?.status;
         const responseData = axiosError.response?.data;
         
@@ -438,7 +446,7 @@ const PracticePage = () => {
           
           // API 에러 처리
           if (error && typeof error === 'object' && 'response' in error) {
-            const axiosError = error as { response?: { status?: number; data?: any } };
+            const axiosError = error as { response?: { status?: number; data?: ApiErrorResponse } };
             const status = axiosError.response?.status;
             const responseData = axiosError.response?.data;
             

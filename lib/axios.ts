@@ -1,5 +1,11 @@
 import axios from "axios";
 
+// 커스텀 에러 타입 정의
+interface NetworkError extends Error {
+  isNetworkError: boolean;
+  originalError: unknown;
+}
+
 export const api = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080", // 백엔드 API 서버 URL
     timeout: 600000, // 600초로 증가 (Google Sheets 처리 시간 고려)
@@ -62,9 +68,9 @@ api.interceptors.response.use(
             console.error('Error code:', error.code);
             
             // 네트워크 에러를 사용자에게 알리기 위해 커스텀 에러 생성
-            const networkError = new Error('서버에 연결할 수 없습니다. 네트워크 연결을 확인해주세요.');
-            (networkError as any).isNetworkError = true;
-            (networkError as any).originalError = error;
+            const networkError = new Error('서버에 연결할 수 없습니다. 네트워크 연결을 확인해주세요.') as NetworkError;
+            networkError.isNetworkError = true;
+            networkError.originalError = error;
             return Promise.reject(networkError);
         }
         

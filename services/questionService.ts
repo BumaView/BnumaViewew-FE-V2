@@ -8,7 +8,7 @@ export const questionService = {
     // 전체 질문 목록 조회 (사용자용)
     searchAllQuestions: async (page = 0, size = 10): Promise<question.SearchAllQuestionResponse> => {
         try {
-            const response = await api.get("/user/questions", {
+            const response = await api.get("/api/questions", {
                 params: { page, size }
             });
             return response.data;

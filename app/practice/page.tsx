@@ -86,19 +86,29 @@ const PracticePage = () => {
       
       console.log('Processing folders:', folders);
       
-      folders.forEach((folder, folderIndex) => {
-        console.log(`Folder ${folderIndex}:`, folder);
-        console.log(`Folder ${folderIndex} bookmarks:`, folder.bookmarks);
-        
-        if (Array.isArray(folder.bookmarks)) {
-          folder.bookmarks.forEach((bookmark, bookmarkIndex) => {
-            console.log(`Bookmark ${bookmarkIndex}:`, bookmark);
-            bookmarkedIds.add(bookmark.questionId);
-          });
-        } else {
-          console.warn(`Folder ${folderIndex} bookmarks is not an array:`, folder.bookmarks);
+      // 각 폴더의 북마크들을 개별적으로 로드
+      for (const folder of folders) {
+        try {
+          console.log(`Loading bookmarks for folder ${folder.folderId}...`);
+          const folderBookmarks = await bookmarkService.getBookmarkedQuestionsInFolder(folder.folderId);
+          console.log(`Folder ${folder.folderId} bookmarks:`, folderBookmarks);
+          
+          if (Array.isArray(folderBookmarks.bookmarks)) {
+            folderBookmarks.bookmarks.forEach((bookmark) => {
+              console.log(`Adding bookmark:`, bookmark);
+              bookmarkedIds.add(bookmark.questionId);
+            });
+          }
+        } catch (error) {
+          console.error(`Error loading bookmarks for folder ${folder.folderId}:`, error);
+          // 폴더별 북마크 로드 실패 시 폴더의 bookmarks 배열 사용 (fallback)
+          if (Array.isArray(folder.bookmarks)) {
+            folder.bookmarks.forEach((bookmark) => {
+              bookmarkedIds.add(bookmark.questionId);
+            });
+          }
         }
-      });
+      }
       
       console.log('Bookmarked question IDs:', Array.from(bookmarkedIds));
       setBookmarkedQuestions(bookmarkedIds);

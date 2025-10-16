@@ -9,7 +9,7 @@ export const bookmarkService = {
     getBookmarkFolders: async (): Promise<bookmark.GetBookmarkedFolderListResponse> => {
         try {
             console.log('Fetching bookmark folders...');
-            const response = await api.get("/user/bookmarks");
+            const response = await api.get("/api/bookmarks");
             console.log('Bookmark folders response:', response.data);
             console.log('Response type:', typeof response.data);
             console.log('Is array:', Array.isArray(response.data));
@@ -55,7 +55,7 @@ export const bookmarkService = {
     // 폴더별 북마크된 질문 조회
     getBookmarkedQuestionsInFolder: async (folderId: number): Promise<bookmark.GetBookmarkedQuestionsInFolderResponse> => {
         try {
-            const response = await api.get(`/user/bookmarks/${folderId}`);
+            const response = await api.get(`/api/bookmarks/${folderId}`);
             return response.data;
         } catch (error) {
             throw handleApiError(error);
@@ -65,7 +65,7 @@ export const bookmarkService = {
     // 북마크 폴더 생성
     makeBookmarkedFolder: async (data: bookmark.MakeBookmarkedFolderRequest): Promise<bookmark.MakeBookmarkedFolderResponse> => {
         try {
-            const response = await api.post("/user/bookmarks/folders", data);
+            const response = await api.post("/user/bookmarks/forders", data);
             return response.data;
         } catch (error) {
             throw handleApiError(error);
@@ -76,7 +76,7 @@ export const bookmarkService = {
     bookmarkingQuestion: async (data: bookmark.BookmarkingQuestionRequest): Promise<bookmark.BookmarkingQuestionResponse> => {
         try {
             console.log('Bookmarking question request:', data);
-            const response = await api.post("/user/bookmarks", data);
+            const response = await api.post("/api/bookmarks", data);
             console.log('Bookmarking question response:', response.data);
             return response.data;
         } catch (error) {
@@ -89,7 +89,7 @@ export const bookmarkService = {
     unbookmarkingQuestion: async (bookmarkId: number): Promise<void> => {
         try {
             console.log('Unbookmarking question with ID:', bookmarkId);
-            await api.delete(`/user/bookmarks?bookmarkId=${bookmarkId}`);
+            await api.delete(`/api/bookmarks?bookmarkId=${bookmarkId}`);
             console.log('Question unbookmarked successfully');
         } catch (error) {
             console.error('Unbookmarking question error:', error);
@@ -100,7 +100,7 @@ export const bookmarkService = {
     // 북마크 폴더 삭제
     deleteBookmarkFolder: async (folderId: number): Promise<void> => {
         try {
-            await api.delete(`/user/bookmarks/folders/${folderId}`);
+            await api.delete(`/user/bookmarks/forders/${folderId}`);
         } catch (error) {
             throw handleApiError(error);
         }

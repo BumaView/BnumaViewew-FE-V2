@@ -7,7 +7,7 @@ export const sessionService = {
     // 현재 진행 중인 면접 조회
     getCurrentSession: async (): Promise<session.CreateMockInterviewResponse | null> => {
         try {
-            const response = await api.get("/user/interviews/current");
+            const response = await api.get("/api/interviews/current");
             return response.data;
         } catch (error) {
             throw handleApiError(error);
@@ -18,10 +18,10 @@ export const sessionService = {
     createMockInterview: async (data: session.CreateMockInterviewRequest): Promise<session.CreateMockInterviewResponse> => {
         try {
             console.log('Creating mock interview with data:', data);
-            console.log('Request URL:', '/user/interviews');
+            console.log('Request URL:', '/api/interviews');
             console.log('Request method:', 'POST');
             
-            const response = await api.post("/user/interviews", data);
+            const response = await api.post("/api/interviews", data);
             console.log('Mock interview created successfully:', response.data);
             return response.data;
         } catch (error) {
@@ -33,7 +33,7 @@ export const sessionService = {
     // 랜덤 질문 조회 (간단한 버전)
     getRandomQuestion: async (): Promise<session.CreateMockInterviewResponse> => {
         try {
-            const response = await api.get("/user/interviews");
+            const response = await api.get("/api/interviews");
             return response.data;
         } catch (error) {
             throw handleApiError(error);
@@ -43,7 +43,7 @@ export const sessionService = {
     // 답변 기록
     recordAnswer: async (interviewId: number, data: session.SessionBySessionQuestionAnswerRecordsRequest): Promise<session.SessionBySessionQuestionAnswerRecordsResponse> => {
         try {
-            const response = await api.post(`/user/interviews/${interviewId}`, data);
+            const response = await api.post(`/api/interviews/${interviewId}`, data);
             return response.data;
         } catch (error) {
             throw handleApiError(error);
@@ -53,7 +53,7 @@ export const sessionService = {
     // 면접 완료
     finishInterview: async (interviewId: number, totalTime: number = 0): Promise<session.FinishedMockInterviewResponse> => {
         try {
-            const response = await api.get(`/user/interviews/${interviewId}/finish`);
+            const response = await api.get(`/api/interviews/${interviewId}/finish`);
             return response.data;
         } catch (error) {
             throw handleApiError(error);
@@ -63,7 +63,7 @@ export const sessionService = {
     // 면접 히스토리 조회
     getInterviewHistory: async (page = 0, size = 10): Promise<session.FinishedMockInterviewResponse[]> => {
         try {
-            const response = await api.get("/user/interviews/history", {
+            const response = await api.get("/api/interviews/history", {
                 params: { page, size }
             });
             return response.data;
@@ -75,7 +75,7 @@ export const sessionService = {
     // 특정 면접 조회
     getInterviewById: async (interviewId: number): Promise<session.FinishedMockInterviewResponse> => {
         try {
-            const response = await api.get(`/user/interviews/${interviewId}`);
+            const response = await api.get(`/api/interviews/${interviewId}`);
             return response.data;
         } catch (error) {
             throw handleApiError(error);

@@ -20,7 +20,7 @@ export const questionService = {
     // 질문 검색
     searchQuestions: async (query: string, page = 0, size = 10): Promise<question.SearchAllQuestionResponse> => {
         try {
-            const response = await api.get("/user/questions/search", {
+            const response = await api.get("/api/questions/search", {
                 params: { query, page, size }
             });
             return response.data;
@@ -32,7 +32,7 @@ export const questionService = {
     // 카테고리별 질문 조회
     searchQuestionByCategory: async (params: question.SearchQuestionByCategoryRequest, page = 0, size = 10): Promise<question.SearchQuestionByCategoryResponse> => {
         try {
-            const response = await api.get("/user/questions/search", {
+            const response = await api.get("/api/questions/search", {
                 params: { ...params, page, size }
             });
             return response.data;
@@ -44,7 +44,7 @@ export const questionService = {
     // 질문 상세 조회
     searchQuestionById: async (id: number): Promise<question.SearchQuestionByIdResponse> => {
         try {
-            const response = await api.get(`/user/questions/${id}`);
+            const response = await api.get(`/api/questions/${id}`);
             return response.data;
         } catch (error) {
             throw handleApiError(error);

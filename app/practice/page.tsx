@@ -31,6 +31,10 @@ const PracticePage = () => {
   const [bookmarkedQuestions, setBookmarkedQuestions] = useState<Set<number>>(new Set());
   const [isBookmarking, setIsBookmarking] = useState(false);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  const [bookmarkFolders, setBookmarkFolders] = useState<bookmark.GetBookmarkedFolderListResponse>([]);
+  const [allBookmarks, setAllBookmarks] = useState<bookmark.GetBookmarkedQuestionsInFolderResponse[]>([]);
+  const [showBookmarkModal, setShowBookmarkModal] = useState(false);
+  const [selectedQuestionForBookmark, setSelectedQuestionForBookmark] = useState<number | null>(null);
   const [showAdvancedFilter, setShowAdvancedFilter] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState({
     category: '',
@@ -65,6 +69,28 @@ const PracticePage = () => {
   }, [filters]);
 
 
+  const loadBookmarkFolders = async () => {
+    try {
+      console.log('Loading bookmark folders...');
+      const response = await bookmarkService.getBookmarkFolders();
+      console.log('Bookmark folders response:', response);
+      
+      let folders: bookmark.GetBookmarkedFolderListResponse;
+      if (Array.isArray(response)) {
+        folders = response;
+      } else if (response && 'content' in response) {
+        folders = response.content;
+      } else {
+        console.error('Unexpected bookmarks response structure:', response);
+        folders = [];
+      }
+      
+      setBookmarkFolders(folders);
+    } catch (error) {
+      console.error('Load bookmark folders error:', error);
+    }
+  };
+
   const loadBookmarks = async () => {
     try {
       console.log('Loading bookmarks...');
@@ -72,6 +98,7 @@ const PracticePage = () => {
       console.log('Bookmarks response:', response);
       
       const bookmarkedIds = new Set<number>();
+      const allBookmarksData: bookmark.GetBookmarkedQuestionsInFolderResponse[] = [];
       
       // 백엔드 응답 구조에 따라 처리
       let folders: bookmark.GetBookmarkedFolderListResponse;
@@ -93,6 +120,8 @@ const PracticePage = () => {
           const folderBookmarks = await bookmarkService.getBookmarkedQuestionsInFolder(folder.folderId);
           console.log(`Folder ${folder.folderId} bookmarks:`, folderBookmarks);
           
+          allBookmarksData.push(folderBookmarks);
+          
           if (Array.isArray(folderBookmarks.bookmarks)) {
             folderBookmarks.bookmarks.forEach((bookmark) => {
               console.log(`Adding bookmark:`, bookmark);
@@ -112,6 +141,9 @@ const PracticePage = () => {
       
       console.log('Bookmarked question IDs:', Array.from(bookmarkedIds));
       setBookmarkedQuestions(bookmarkedIds);
+      
+      // allBookmarks 상태도 업데이트
+      setAllBookmarks(allBookmarksData);
     } catch (error) {
       console.error('Load bookmarks error:', error);
     }
@@ -135,6 +167,7 @@ const PracticePage = () => {
 
       try {
         await loadQuestions();
+        await loadBookmarkFolders();
         await loadBookmarks();
       } catch (error) {
         console.error('Load data error:', error);
@@ -395,96 +428,110 @@ const PracticePage = () => {
   const toggleBookmark = async (questionId: number) => {
     if (isBookmarking) return;
     
+    const isBookmarked = bookmarkedQuestions.has(questionId);
+    console.log(`Toggling bookmark for question ${questionId}, currently bookmarked: ${isBookmarked}`);
+    
+    if (isBookmarked) {
+      // 북마크 제거
+      await removeBookmark(questionId);
+    } else {
+      // 북마크 추가 - 폴더 선택 모달 표시
+      setSelectedQuestionForBookmark(questionId);
+      setShowBookmarkModal(true);
+    }
+  };
+
+  const removeBookmark = async (questionId: number) => {
     setIsBookmarking(true);
     try {
-      const isBookmarked = bookmarkedQuestions.has(questionId);
-      console.log(`Toggling bookmark for question ${questionId}, currently bookmarked: ${isBookmarked}`);
-      
-      if (isBookmarked) {
-        // 북마크 제거 - 모든 폴더에서 해당 질문의 북마크를 찾아서 제거
-        try {
-          const folders = await bookmarkService.getBookmarkFolders();
-          let foldersToCheck: bookmark.GetBookmarkedFolderListResponse;
-          if (Array.isArray(folders)) {
-            foldersToCheck = folders;
-          } else if (folders && 'content' in folders) {
-            foldersToCheck = folders.content;
-          } else {
-            throw new Error('Invalid folders response');
-          }
-          
-          for (const folder of foldersToCheck) {
-            const bookmark = folder.bookmarks.find(b => b.questionId === questionId);
-            if (bookmark) {
-              await bookmarkService.unbookmarkingQuestion(bookmark.bookmarkId);
-              console.log(`Removed bookmark for question ${questionId}`);
-              break;
-            }
-          }
-        } catch (error) {
-          console.error('Error removing bookmark:', error);
-          alert('북마크 제거에 실패했습니다.');
-          return;
-        }
+      // 모든 폴더에서 해당 질문의 북마크를 찾아서 제거
+      const folders = await bookmarkService.getBookmarkFolders();
+      let foldersToCheck: bookmark.GetBookmarkedFolderListResponse;
+      if (Array.isArray(folders)) {
+        foldersToCheck = folders;
+      } else if (folders && 'content' in folders) {
+        foldersToCheck = folders.content;
       } else {
-        // 북마크 추가 - 기본 폴더에 추가
-        try {
-          console.log(`Adding bookmark for question ${questionId} to folder 1...`);
-          const response = await bookmarkService.bookmarkingQuestion({
-            questionId: questionId,
-            folderId: 1 // 기본 폴더 ID
-          });
-          console.log('Bookmark added successfully:', response);
-        } catch (error) {
-          console.error('Error adding bookmark:', error);
-          
-          // 네트워크 에러 처리
-          if (error && typeof error === 'object' && 'isNetworkError' in error) {
-            alert('서버에 연결할 수 없습니다. 네트워크 연결을 확인해주세요.');
-            return;
-          }
-          
-          // API 에러 처리
-          if (error && typeof error === 'object' && 'response' in error) {
-            const axiosError = error as { response?: { status?: number; data?: ApiErrorResponse } };
-            const status = axiosError.response?.status;
-            const responseData = axiosError.response?.data;
-            
-            if (status === 403) {
-              alert('API 접근 권한이 없습니다. 로그인을 다시 시도해주세요.');
-              localStorage.removeItem('accessToken');
-              localStorage.removeItem('refreshToken');
-              localStorage.removeItem('userInfo');
-              router.push('/login');
-            } else if (status === 401) {
-              alert('로그인이 만료되었습니다. 다시 로그인해주세요.');
-              localStorage.removeItem('accessToken');
-              localStorage.removeItem('refreshToken');
-              localStorage.removeItem('userInfo');
-              router.push('/login');
-            } else if (status === 409) {
-              alert('이미 북마크된 질문입니다.');
-            } else if (status === 404) {
-              alert('요청한 리소스를 찾을 수 없습니다. 잠시 후 다시 시도해주세요.');
-            } else if (status && status >= 500) {
-              alert('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
-            } else {
-              const errorMessage = responseData?.message || '북마크 추가에 실패했습니다.';
-              alert(errorMessage);
-            }
-          } else {
-            alert('북마크 추가에 실패했습니다.');
-          }
-          return;
+        throw new Error('Invalid folders response');
+      }
+      
+      for (const folder of foldersToCheck) {
+        const bookmark = folder.bookmarks.find(b => b.questionId === questionId);
+        if (bookmark) {
+          await bookmarkService.unbookmarkingQuestion(bookmark.bookmarkId);
+          console.log(`Removed bookmark for question ${questionId}`);
+          break;
         }
       }
       
-      // 북마크 추가/제거 후 전체 북마크 목록 다시 로드
+      // 북마크 제거 후 전체 북마크 목록 다시 로드
+      await loadBookmarks();
+    } catch (error) {
+      console.error('Error removing bookmark:', error);
+      alert('북마크 제거에 실패했습니다.');
+    } finally {
+      setIsBookmarking(false);
+    }
+  };
+
+  const addBookmarkToFolder = async (folderId: number) => {
+    if (!selectedQuestionForBookmark) return;
+    
+    setIsBookmarking(true);
+    try {
+      console.log(`Adding bookmark for question ${selectedQuestionForBookmark} to folder ${folderId}...`);
+      const response = await bookmarkService.bookmarkingQuestion({
+        questionId: selectedQuestionForBookmark,
+        folderId: folderId
+      });
+      console.log('Bookmark added successfully:', response);
+      
+      // 북마크 추가 후 전체 북마크 목록 다시 로드
       await loadBookmarks();
       
+      // 모달 닫기
+      setShowBookmarkModal(false);
+      setSelectedQuestionForBookmark(null);
     } catch (error) {
-      console.error('Bookmark toggle error:', error);
-      alert('북마크 처리 중 오류가 발생했습니다.');
+      console.error('Error adding bookmark:', error);
+      
+      // 네트워크 에러 처리
+      if (error && typeof error === 'object' && 'isNetworkError' in error) {
+        alert('서버에 연결할 수 없습니다. 네트워크 연결을 확인해주세요.');
+        return;
+      }
+      
+      // API 에러 처리
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { status?: number; data?: ApiErrorResponse } };
+        const status = axiosError.response?.status;
+        const responseData = axiosError.response?.data;
+        
+        if (status === 403) {
+          alert('API 접근 권한이 없습니다. 로그인을 다시 시도해주세요.');
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('userInfo');
+          router.push('/login');
+        } else if (status === 401) {
+          alert('로그인이 만료되었습니다. 다시 로그인해주세요.');
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('userInfo');
+          router.push('/login');
+        } else if (status === 409) {
+          alert('이미 북마크된 질문입니다.');
+        } else if (status === 404) {
+          alert('요청한 리소스를 찾을 수 없습니다. 잠시 후 다시 시도해주세요.');
+        } else if (status && status >= 500) {
+          alert('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+        } else {
+          const errorMessage = responseData?.message || '북마크 추가에 실패했습니다.';
+          alert(errorMessage);
+        }
+      } else {
+        alert('북마크 추가에 실패했습니다.');
+      }
     } finally {
       setIsBookmarking(false);
     }
@@ -763,6 +810,46 @@ const PracticePage = () => {
           </div>
         )}
       </div>
+
+      {/* 북마크 폴더 선택 모달 */}
+      {showBookmarkModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-96 max-w-md mx-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">북마크 폴더 선택</h3>
+            <p className="text-sm text-gray-600 mb-4">질문을 어느 폴더에 북마크하시겠습니까?</p>
+            
+            <div className="space-y-2 mb-6">
+              {Array.isArray(bookmarkFolders) && bookmarkFolders.map((folder) => (
+                <button
+                  key={folder.folderId}
+                  onClick={() => addBookmarkToFolder(folder.folderId)}
+                  disabled={isBookmarking}
+                  className="w-full text-left px-4 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                >
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium text-gray-900">{folder.name}</span>
+                    <span className="text-sm text-gray-500">
+                      {allBookmarks.find(fb => fb.folderId === folder.folderId)?.bookmarks?.length || 0}개
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowBookmarkModal(false);
+                  setSelectedQuestionForBookmark(null);
+                }}
+                className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

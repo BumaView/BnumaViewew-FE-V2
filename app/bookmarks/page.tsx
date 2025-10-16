@@ -13,6 +13,7 @@ const BookmarksPage = () => {
   const [folders, setFolders] = useState<bookmark.GetBookmarkedFolderListResponse>([]);
   const [selectedFolder, setSelectedFolder] = useState<number | null>(null);
   const [selectedFolderBookmarks, setSelectedFolderBookmarks] = useState<bookmark.GetBookmarkedQuestionsInFolderResponse | null>(null);
+  const [allBookmarks, setAllBookmarks] = useState<bookmark.GetBookmarkedQuestionsInFolderResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingBookmarks, setIsLoadingBookmarks] = useState(false);
   const [showCreateFolder, setShowCreateFolder] = useState(false);
@@ -53,6 +54,11 @@ const BookmarksPage = () => {
       }
       
       setFolders(foldersData);
+      
+      // 폴더 목록 로드 후 전체 북마크도 로드
+      if (Array.isArray(foldersData) && foldersData.length > 0) {
+        await loadAllBookmarks();
+      }
     } catch (error) {
       console.error('Load data error:', error);
       router.push('/login');
@@ -97,6 +103,29 @@ const BookmarksPage = () => {
       setSelectedFolderBookmarks(null);
     } finally {
       setIsLoadingBookmarks(false);
+    }
+  };
+
+  const loadAllBookmarks = async () => {
+    try {
+      console.log('Loading all bookmarks...');
+      const allBookmarksData: bookmark.GetBookmarkedQuestionsInFolderResponse[] = [];
+      
+      if (Array.isArray(folders)) {
+        for (const folder of folders) {
+          try {
+            const folderBookmarks = await bookmarkService.getBookmarkedQuestionsInFolder(folder.folderId);
+            allBookmarksData.push(folderBookmarks);
+          } catch (error) {
+            console.error(`Error loading bookmarks for folder ${folder.folderId}:`, error);
+          }
+        }
+      }
+      
+      console.log('All bookmarks loaded:', allBookmarksData);
+      setAllBookmarks(allBookmarksData);
+    } catch (error) {
+      console.error('Load all bookmarks error:', error);
     }
   };
 
@@ -190,12 +219,8 @@ const BookmarksPage = () => {
 
   const getFilteredBookmarks = () => {
     if (selectedFolder === null) {
-      // 전체 북마크: 모든 폴더의 북마크들을 합침
-      if (Array.isArray(folders)) {
-        return folders.flatMap(folder => folder.bookmarks || []);
-      } else {
-        return [];
-      }
+      // 전체 북마크: allBookmarks에서 모든 북마크들을 합침
+      return allBookmarks.flatMap(folderBookmarks => folderBookmarks.bookmarks || []);
     } else {
       // 특정 폴더의 북마크: selectedFolderBookmarks에서 가져옴
       return selectedFolderBookmarks?.bookmarks || [];
@@ -203,10 +228,7 @@ const BookmarksPage = () => {
   };
 
   const getTotalBookmarkCount = () => {
-    if (Array.isArray(folders)) {
-      return folders.reduce((total, folder) => total + folder.bookmarks.length, 0);
-    }
-    return 0;
+    return allBookmarks.reduce((total, folderBookmarks) => total + (folderBookmarks.bookmarks?.length || 0), 0);
   };
 
   if (isLoading) {
@@ -311,6 +333,7 @@ const BookmarksPage = () => {
                   onClick={() => {
                     setSelectedFolder(null);
                     setSelectedFolderBookmarks(null);
+                    loadAllBookmarks();
                   }}
                   className={`w-full text-left px-3 py-2 rounded-sm text-sm transition-colors ${
                     selectedFolder === null
@@ -339,7 +362,9 @@ const BookmarksPage = () => {
                   >
                     <div className="flex justify-between items-center">
                       <span>{folder.name}</span>
-                      <span className="text-xs text-gray-400">{folder.bookmarks?.length || 0}</span>
+                      <span className="text-xs text-gray-400">
+                        {allBookmarks.find(fb => fb.folderId === folder.folderId)?.bookmarks?.length || 0}
+                      </span>
                     </div>
                   </button>
                 ))}

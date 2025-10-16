@@ -7,7 +7,7 @@ export const sessionService = {
     // 현재 진행 중인 면접 조회
     getCurrentSession: async (): Promise<session.CreateMockInterviewResponse | null> => {
         try {
-            const response = await api.get("/user/interviews/current");
+            const response = await api.get("/user/interviews");
             return response.data;
         } catch (error) {
             throw handleApiError(error);

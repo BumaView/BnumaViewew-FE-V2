@@ -203,12 +203,9 @@ const PracticePage = () => {
       }
       
       console.log('Token found, getting random interview from server...');
-      
-      // 백엔드에서 랜덤 면접 세션 생성
-      const sessionData = await sessionService.getRandomQuestion();
-      console.log('Random interview session received:', sessionData);
-      
-      router.push(`/practice/${sessionData.id}`);
+
+      // 백엔드에서 랜덤 면접 세션 생성     
+      router.push(`/practice/${(await sessionService.getCurrentSession())?.id}`);
     } catch (error: unknown) {
       console.error('Start random interview error:', error);
       

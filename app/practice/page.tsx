@@ -54,7 +54,7 @@ const PracticePage = () => {
         response = await questionService.searchAllQuestions(0, 100);
       }
       
-      let questions = response.content || [];
+      const questions = response.content || [];
 
       setQuestions(questions);
     } catch (error) {

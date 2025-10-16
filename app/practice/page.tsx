@@ -188,10 +188,17 @@ const PracticePage = () => {
         return;
       }
       
-      console.log('Token found, getting random interview from server...');
+      console.log('Token found, creating random interview session...');
 
-      // 백엔드에서 랜덤 면접 세션 생성     
-      router.push(`/practice/${(await sessionService.getCurrentSession())?.id}`);
+      // 백엔드에서 랜덤 면접 세션 생성
+      const sessionData = await sessionService.createMockInterview({
+        title: '랜덤 면접',
+        category: '기술면접',
+        count: 5 // 5개 질문
+      });
+      
+      console.log('Random interview session created:', sessionData);
+      router.push(`/practice/${sessionData.id}`);
     } catch (error: unknown) {
       console.error('Start random interview error:', error);
       

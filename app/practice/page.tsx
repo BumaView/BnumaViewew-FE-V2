@@ -255,7 +255,7 @@ const PracticePage = () => {
       // 백엔드에서 랜덤 면접 세션 생성
       const sessionData = await sessionService.createMockInterview({
         title: '랜덤 면접',
-        category: filters.category || '전체', // 현재 필터의 카테고리 사용, 없으면 '전체'
+        category: filters.category || '', // 현재 필터의 카테고리 사용, 없으면 빈 문자열
         count: 5 // 5개 질문
       });
       
@@ -327,7 +327,7 @@ const PracticePage = () => {
 
       const sessionData = await sessionService.createMockInterview({
         title: '선택한 질문 면접',
-        category: filters.category || '전체', // 현재 필터의 카테고리 사용, 없으면 '전체'
+        category: filters.category || '', // 현재 필터의 카테고리 사용, 없으면 빈 문자열
         count: selectedQuestions.length
       });
       
@@ -408,7 +408,7 @@ const PracticePage = () => {
       // 필터링된 질문으로 면접 세션 생성
       const sessionData = await sessionService.createMockInterview({
         title: '필터링된 면접',
-        category: advancedFilters.category || '전체', // 고급 필터의 카테고리 사용, 없으면 '전체'
+        category: advancedFilters.category || '', // 고급 필터의 카테고리 사용, 없으면 빈 문자열
         count: 1 // 랜덤 질문 1개
       });
       

@@ -36,6 +36,18 @@ const PracticePage = () => {
   const [showBookmarkModal, setShowBookmarkModal] = useState(false);
   const [selectedQuestionForBookmark, setSelectedQuestionForBookmark] = useState<number | null>(null);
   const [showAdvancedFilter, setShowAdvancedFilter] = useState(false);
+  const [availableCategories] = useState([
+    '전체',
+    '백엔드',
+    '프론트엔드', 
+    'AI',
+    '은행',
+    '게임',
+    '디자인',
+    '보안',
+    '인프라',
+    '임베디드'
+  ]);
   const [advancedFilters, setAdvancedFilters] = useState({
     category: '',
     company: '',
@@ -354,6 +366,13 @@ const PracticePage = () => {
     try {
       console.log('Starting advanced random interview with filters:', advancedFilters);
       
+      // 카테고리 유효성 검사
+      if (advancedFilters.category && !availableCategories.includes(advancedFilters.category)) {
+        alert('유효하지 않은 카테고리입니다. 목록에서 선택해주세요.');
+        setIsStarting(false);
+        return;
+      }
+      
       // 토큰 확인 및 유효성 검사
       const token = localStorage.getItem('accessToken');
       if (!token) {
@@ -595,13 +614,18 @@ const PracticePage = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               <div>
                 <label className="block text-xs text-gray-500 mb-1">카테고리</label>
-                <input
-                  type="text"
-                  placeholder="카테고리"
+                <select
                   value={advancedFilters.category}
                   onChange={(e) => setAdvancedFilters(prev => ({ ...prev, category: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-200 rounded-sm text-black text-sm focus:outline-none focus:border-gray-400"
-                />
+                >
+                  <option value="">카테고리 선택</option>
+                  {availableCategories.map((category) => (
+                    <option key={category} value={category === '전체' ? '' : category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-xs text-gray-500 mb-1">회사</label>
@@ -694,16 +718,11 @@ const PracticePage = () => {
                 onChange={(e) => handleFilterChange('category', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-200 rounded-sm text-black text-sm focus:outline-none focus:border-gray-400"
               >
-                <option value="">전체</option>
-                <option value="back">백엔드</option>
-                <option value="front">프론트엔드</option>
-                <option value="ai">AI</option>
-                <option value="bank">은행</option>
-                <option value="game">게임</option>
-                <option value="design">디자인</option>
-                <option value="security">보안</option>
-                <option value="infra">인프라</option>
-                <option value="embedded">임베디드</option>
+                {availableCategories.map((category) => (
+                  <option key={category} value={category === '전체' ? '' : category}>
+                    {category}
+                  </option>
+                ))}
               </select>
             </div>
           </div>

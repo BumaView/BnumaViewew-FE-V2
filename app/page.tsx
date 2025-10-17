@@ -13,7 +13,7 @@ export default function HomePage() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      if (user?.userType === 'Admin') {
+      if (user?.userType === 'ADMIN') {
         router.push('/admin');
       } else {
         router.push('/dashboard');

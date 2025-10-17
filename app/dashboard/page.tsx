@@ -174,7 +174,7 @@ export default function DashboardPage() {
       )}
 
       {/* Admin Section */}
-      {user?.userType === 'Admin' && (
+      {user?.userType === 'ADMIN' && (
         <Card className="mt-8">
           <CardHeader>
             <CardTitle>관리자 기능</CardTitle>

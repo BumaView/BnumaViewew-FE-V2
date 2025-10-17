@@ -479,7 +479,7 @@ export default function AdminPage() {
                   return (
                     <Button
                       key={pageNum}
-                      variant={currentPage === pageNum ? "default" : "outline"}
+                      variant={currentPage === pageNum ? "primary" : "outline"}
                       size="sm"
                       onClick={() => handlePageChange(pageNum)}
                       className="w-10"

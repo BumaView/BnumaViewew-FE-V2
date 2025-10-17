@@ -228,7 +228,7 @@ export default function AdminPage() {
       alert('문제가 수정되었습니다.');
     } catch (error) {
       console.error('Failed to edit question:', error);
-      alert(`문제 수정에 실패했습니다: ${error.message || error}`);
+      alert(`문제 수정에 실패했습니다: ${(error as Error)?.message || error}`);
     }
   };
 
@@ -269,7 +269,7 @@ export default function AdminPage() {
       alert(`문제 ID ${response.id}가 삭제되었습니다.`);
     } catch (error) {
       console.error('Failed to delete question:', error);
-      alert(`문제 삭제에 실패했습니다: ${error.message || error}`);
+      alert(`문제 삭제에 실패했습니다: ${(error as Error)?.message || error}`);
     }
   };
 

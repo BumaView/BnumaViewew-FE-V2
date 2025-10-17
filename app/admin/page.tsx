@@ -119,7 +119,6 @@ export default function AdminPage() {
           setQuestionsCache(data.questionsCache);
           setTotalPages(data.totalPages);
           setTotalElements(data.totalElements);
-          setCacheTimestamp(timestamp);
           
           // 첫 페이지 데이터 설정 (빈 배열이어도 설정)
           setQuestions(data.questionsCache[0] || []);

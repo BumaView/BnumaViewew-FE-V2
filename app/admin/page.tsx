@@ -142,7 +142,6 @@ export default function AdminPage() {
       };
       localStorage.setItem('adminQuestionsCache', JSON.stringify(cacheData));
       localStorage.setItem('adminQuestionsCacheTimestamp', Date.now().toString());
-      setCacheTimestamp(Date.now());
     } catch (error) {
       console.error('Failed to save to cache:', error);
     }

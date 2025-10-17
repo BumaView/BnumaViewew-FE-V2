@@ -24,7 +24,6 @@ const MaterialsPage = () => {
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const router = useRouter();
 
   const categories = [

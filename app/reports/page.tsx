@@ -27,7 +27,6 @@ interface ReportData {
 const ReportsPage = () => {
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -91,7 +90,7 @@ const ReportsPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header userInfo={userInfo} />
+      <Header />
 
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* 헤더 */}

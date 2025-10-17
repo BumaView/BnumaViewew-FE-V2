@@ -35,7 +35,6 @@ interface InterviewSession {
 const ResultPage = ({ params }: { params: Promise<{ id: string }> | { id: string } }) => {
   // Next.js 15 호환성을 위한 params 처리
   const resolvedParams = params instanceof Promise ? use(params) : params;
-  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [interviewSession, setInterviewSession] = useState<InterviewSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
@@ -118,7 +117,7 @@ const ResultPage = ({ params }: { params: Promise<{ id: string }> | { id: string
   return (
     <div className="min-h-screen bg-gray-50">
       {/* 네비게이션 */}
-      <Header userInfo={userInfo} />
+      <Header />
 
       {/* 메인 콘텐츠 */}
       <div className="max-w-4xl mx-auto px-6 py-8">

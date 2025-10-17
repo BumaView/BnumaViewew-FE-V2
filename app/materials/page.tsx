@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
-import { UserInfo } from '@/lib/types';
 
 interface Material {
   id: number;
@@ -58,7 +57,6 @@ const MaterialsPage = () => {
 
       try {
         const parsedUserInfo = JSON.parse(storedUserInfo);
-        setUserInfo(parsedUserInfo);
 
         // 임시 학습 자료 데이터
         const mockMaterials: Material[] = [

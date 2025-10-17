@@ -4,7 +4,6 @@ import { useState, useEffect, use, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import { sessionService } from '@/services/sessionService';
-import { UserInfo } from '@/lib/types';
 
 interface Question {
   id: number;

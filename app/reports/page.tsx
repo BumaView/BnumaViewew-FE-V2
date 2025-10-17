@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
-import { UserInfo } from '@/lib/types';
 
 interface ReportData {
   totalInterviews: number;

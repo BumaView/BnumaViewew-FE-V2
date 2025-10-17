@@ -40,7 +40,6 @@ const ReportsPage = () => {
 
       try {
         const parsedUserInfo = JSON.parse(storedUserInfo);
-        setUserInfo(parsedUserInfo);
 
         // 임시 리포트 데이터 (실제로는 API에서 가져와야 함)
         const mockReportData: ReportData = {

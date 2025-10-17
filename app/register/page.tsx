@@ -1,211 +1,217 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { authService } from '@/services/authService';
+import Link from 'next/link';
+import { useAuthStore } from '@/store/auth.store';
+import { authService } from '@/services/auth.service';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 
-const RegisterPage = () => {
+export default function RegisterPage() {
+  const router = useRouter();
+  const { setUser, setLoading } = useAuthStore();
   const [formData, setFormData] = useState({
     id: '',
     nickname: '',
     email: '',
     password: '',
     confirmPassword: '',
-    userType: 'USER' as 'USER' | 'ADMIN'
+    userType: 'USER' as 'USER' | 'ADMIN',
   });
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [name]: value,
     }));
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: '',
+      }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.id.trim()) {
+      newErrors.id = '아이디를 입력해주세요.';
+    } else if (formData.id.length < 3) {
+      newErrors.id = '아이디는 3자 이상이어야 합니다.';
+    }
+
+    if (!formData.nickname.trim()) {
+      newErrors.nickname = '닉네임을 입력해주세요.';
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = '이메일을 입력해주세요.';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = '올바른 이메일 형식이 아닙니다.';
+    }
+
+    if (!formData.password.trim()) {
+      newErrors.password = '비밀번호를 입력해주세요.';
+    } else if (formData.password.length < 6) {
+      newErrors.password = '비밀번호는 6자 이상이어야 합니다.';
+    }
+
+    if (!formData.confirmPassword.trim()) {
+      newErrors.confirmPassword = '비밀번호 확인을 입력해주세요.';
+    } else if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = '비밀번호가 일치하지 않습니다.';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setIsLoading(true);
+    
+    if (!validateForm()) return;
 
-    // 비밀번호 확인
-    if (formData.password !== formData.confirmPassword) {
-      setError('비밀번호가 일치하지 않습니다.');
-      setIsLoading(false);
-      return;
-    }
+    setIsLoading(true);
+    setLoading(true);
 
     try {
-      const response = await authService.register({
-        id: formData.id,
-        nickname: formData.nickname,
-        email: formData.email,
-        password: formData.password,
-        userType: formData.userType
-      });
-
-      // 토큰을 localStorage에 저장
-      localStorage.setItem('accessToken', response.accessToken);
-      localStorage.setItem('refreshToken', response.refreshToken);
-
-      // 온보딩으로 이동
-      router.push('/onboarding');
-    } catch (error: unknown) {
-      console.error('Register error:', error);
+      const { confirmPassword, ...signUpData } = formData;
+      const response = await authService.signUp(signUpData);
       
-      if (error && typeof error === 'object' && 'response' in error) {
-        const axiosError = error as { response?: { status?: number; data?: { message?: string } } };
-        if (axiosError.response?.status === 403) {
-          setError('백엔드 서버에 접근할 수 없습니다. 잠시 후 다시 시도해주세요.');
-        } else if (axiosError.response?.status === 409) {
-          setError('이미 존재하는 사용자입니다.');
-        } else if (axiosError.response?.data?.message) {
-          setError(axiosError.response.data.message);
-        } else {
-          setError('회원가입에 실패했습니다. 네트워크 연결을 확인해주세요.');
-        }
-      } else {
-        setError('회원가입에 실패했습니다. 네트워크 연결을 확인해주세요.');
-      }
+      // Sign up only returns success message, no tokens
+      // User needs to login after signup
+      alert('회원가입이 완료되었습니다. 로그인해주세요.');
+      router.push('/login');
+    } catch (error: any) {
+      setErrors({
+        general: error.message || '회원가입에 실패했습니다.',
+      });
     } finally {
       setIsLoading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className='w-full h-screen bg-gray-50 flex items-center justify-center'>
-      <div className='max-w-md w-full mx-4'>
-        {/* 로고/브랜드 영역 */}
-        <div className='text-center mb-12'>
-          <Link href="/" className='text-3xl font-light text-gray-900 tracking-wide'>
-            BUMAVIEW
-          </Link>
-          <div className='w-16 h-px bg-gray-300 mx-auto mt-4'></div>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div className="text-center">
+          <div className="mx-auto w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mb-4">
+            <span className="text-white font-bold text-2xl">B</span>
+          </div>
+          <h2 className="text-3xl font-bold text-gray-900">BumaView</h2>
+          <p className="mt-2 text-gray-600">면접 준비의 새로운 기준</p>
         </div>
 
-        {/* 메인 콘텐츠 */}
-        <div className='bg-white rounded-sm shadow-sm border border-gray-100 p-8'>
-          <div className='text-center mb-8'>
-            <h2 className='text-xl font-light text-gray-800 mb-2'>
-              회원가입
-            </h2>
-            <p className='text-sm text-gray-500 leading-relaxed'>
-              BUMAVIEW에서 면접 준비를 시작해보세요
-            </p>
-          </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-center">회원가입</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {errors.general && (
+                <div className="bg-red-50 border border-red-200 rounded-md p-3">
+                  <p className="text-sm text-red-600">{errors.general}</p>
+                </div>
+              )}
 
-          {/* 회원가입 폼 */}
-          <form onSubmit={handleSubmit} className='space-y-4'>
-            {error && (
-              <div className='bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-sm text-sm'>
-                {error}
-              </div>
-            )}
-
-            <div>
-              <input
-                type='text'
-                name='id'
-                placeholder='사용자 ID'
+              <Input
+                label="아이디"
+                name="id"
                 value={formData.id}
-                onChange={handleChange}
-                required
-                className='w-full px-4 py-3 border border-gray-200 rounded-sm text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:border-gray-400 transition-colors'
+                onChange={handleInputChange}
+                error={errors.id}
+                placeholder="아이디를 입력하세요"
+                disabled={isLoading}
               />
-            </div>
 
-            <div>
-              <input
-                type='text'
-                name='nickname'
-                placeholder='닉네임'
+              <Input
+                label="닉네임"
+                name="nickname"
                 value={formData.nickname}
-                onChange={handleChange}
-                required
-                className='w-full px-4 py-3 border border-gray-200 rounded-sm text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:border-gray-400 transition-colors'
+                onChange={handleInputChange}
+                error={errors.nickname}
+                placeholder="닉네임을 입력하세요"
+                disabled={isLoading}
               />
-            </div>
 
-            <div>
-              <input
-                type='email'
-                name='email'
-                placeholder='이메일'
+              <Input
+                label="이메일"
+                name="email"
+                type="email"
                 value={formData.email}
-                onChange={handleChange}
-                required
-                className='w-full px-4 py-3 border border-gray-200 rounded-sm text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:border-gray-400 transition-colors'
+                onChange={handleInputChange}
+                error={errors.email}
+                placeholder="이메일을 입력하세요"
+                disabled={isLoading}
               />
-            </div>
 
-            <div>
-              <input
-                type='password'
-                name='password'
-                placeholder='비밀번호'
+              <Input
+                label="비밀번호"
+                name="password"
+                type="password"
                 value={formData.password}
-                onChange={handleChange}
-                required
-                className='w-full px-4 py-3 border border-gray-200 rounded-sm text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:border-gray-400 transition-colors'
+                onChange={handleInputChange}
+                error={errors.password}
+                placeholder="비밀번호를 입력하세요"
+                disabled={isLoading}
               />
-            </div>
 
-            <div>
-              <input
-                type='password'
-                name='confirmPassword'
-                placeholder='비밀번호 확인'
+              <Input
+                label="비밀번호 확인"
+                name="confirmPassword"
+                type="password"
                 value={formData.confirmPassword}
-                onChange={handleChange}
-                required
-                className='w-full px-4 py-3 border border-gray-200 rounded-sm text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:border-gray-400 transition-colors'
+                onChange={handleInputChange}
+                error={errors.confirmPassword}
+                placeholder="비밀번호를 다시 입력하세요"
+                disabled={isLoading}
               />
-            </div>
 
-            <div>
-              <select
-                name='userType'
-                value={formData.userType}
-                onChange={handleChange}
-                className='w-full px-4 py-3 border border-gray-200 rounded-sm text-sm text-gray-700 focus:outline-none focus:border-gray-400 transition-colors'
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  사용자 유형
+                </label>
+                <select
+                  name="userType"
+                  value={formData.userType}
+                  onChange={handleInputChange}
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  disabled={isLoading}
+                >
+                  <option value="USER">일반 사용자</option>
+                  <option value="ADMIN">관리자</option>
+                </select>
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full"
+                loading={isLoading}
+                disabled={isLoading}
               >
-                <option value='USER'>일반 사용자</option>
-                <option value='ADMIN'>관리자</option>
-              </select>
+                회원가입
+              </Button>
+            </form>
+
+            <div className="mt-6 text-center">
+              <p className="text-sm text-gray-600">
+                이미 계정이 있으신가요?{' '}
+                <Link href="/login" className="font-medium text-blue-600 hover:text-blue-500">
+                  로그인
+                </Link>
+              </p>
             </div>
-
-
-            <button
-              type='submit'
-              disabled={isLoading}
-              className='w-full bg-gray-900 text-white py-3 rounded-sm text-sm font-medium hover:bg-gray-800 transition-colors mt-6 disabled:opacity-50 disabled:cursor-not-allowed'
-            >
-              {isLoading ? '처리 중...' : '회원가입'}
-            </button>
-          </form>
-
-          {/* 추가 링크 */}
-          <div className='text-center mt-6 pt-6 border-t border-gray-100'>
-            <p className='text-xs text-gray-400'>
-              이미 계정이 있으신가요?{' '}
-              <Link href='/login' className='text-gray-600 hover:text-gray-800 transition-colors'>
-                로그인
-              </Link>
-            </p>
-          </div>
-        </div>
-
-        {/* 하단 텍스트 */}
-        <div className='text-center mt-8'>
-          <p className='text-xs text-gray-400'>
-            © 2024 BUMAVIEW. All rights reserved.
-          </p>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
-};
-
-export default RegisterPage;
+}

@@ -1,234 +1,257 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { signIn, getSession } from 'next-auth/react';
-import { authService } from '@/services/authService';
+import Link from 'next/link';
+import { useAuthStore } from '@/store/auth.store';
+import { authService } from '@/services/auth.service';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
+import { getAuthorizationCodeFromUrl, startGoogleLogin } from '@/lib/google-auth';
+import { decodeJWT } from '@/lib/jwt';
 
-const LoginPage = () => {
+export default function LoginPage() {
+  const router = useRouter();
+  const { setUser, setLoading } = useAuthStore();
   const [formData, setFormData] = useState({
     userId: '',
-    password: ''
+    password: '',
   });
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  // Google OAuth 콜백 처리
+  useEffect(() => {
+    const authCode = getAuthorizationCodeFromUrl();
+    if (authCode) {
+      handleGoogleLoginCallback(authCode);
+    }
+  }, []);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [name]: value,
     }));
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: '',
+      }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.userId.trim()) {
+      newErrors.userId = '아이디를 입력해주세요.';
+    }
+
+    if (!formData.password.trim()) {
+      newErrors.password = '비밀번호를 입력해주세요.';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    
+    if (!validateForm()) return;
+
     setIsLoading(true);
+    setLoading(true);
 
     try {
       const response = await authService.login(formData);
-      console.log('Login response from backend:', response);
-
-      // 타입 가드로 성공 응답인지 확인
-      if ('accessToken' in response) {
-        // 토큰을 localStorage에 저장
-        localStorage.setItem('accessToken', response.accessToken);
-        localStorage.setItem('refreshToken', response.refreshToken);
-        
-        // 사용자 정보를 localStorage에 저장 (백엔드에서 받은 정보 사용)
-        const userInfo = {
-          userId: response.userId || 1,
-          name: response.name || formData.userId,
-          userType: response.userType || 'USER', // 백엔드에서 받은 userType 사용
-          onboardingCompleted: true
-        };
-        localStorage.setItem('userInfo', JSON.stringify(userInfo));
-        console.log('Login userInfo saved to localStorage:', userInfo);
-      } else {
-        console.error('Login failed:', response);
-        setError('로그인에 실패했습니다.');
-        return;
-      }
-
-      // 대시보드로 리다이렉트
-      router.push('/dashboard');
-    } catch (error: unknown) {
-      console.error('Login error:', error);
       
-      if (error && typeof error === 'object' && 'response' in error) {
-        const axiosError = error as { response?: { status?: number; data?: { message?: string } } };
-        if (axiosError.response?.status === 403) {
-          setError('백엔드 서버에 접근할 수 없습니다. 잠시 후 다시 시도해주세요.');
-        } else if (axiosError.response?.status === 401) {
-          setError('아이디 또는 비밀번호가 올바르지 않습니다.');
-        } else if (axiosError.response?.data?.message) {
-          setError(axiosError.response.data.message);
-        } else {
-          setError('로그인에 실패했습니다. 네트워크 연결을 확인해주세요.');
-        }
-      } else {
-        setError('로그인에 실패했습니다. 네트워크 연결을 확인해주세요.');
+      // Store tokens
+      localStorage.setItem('accessToken', response.accessToken);
+      localStorage.setItem('refreshToken', response.refreshToken);
+      
+      // Decode JWT token to get user information
+      const payload = decodeJWT(response.accessToken);
+      if (!payload) {
+        throw new Error('토큰을 디코딩할 수 없습니다.');
       }
+      
+      console.log('JWT Payload:', payload);
+      console.log('userId from payload:', payload.userId, 'type:', typeof payload.userId);
+      
+      // Create user object
+      const user = {
+        userType: payload.userType, // Keep original case: 'ADMIN' or 'USER'
+        userId: payload.userId, // Keep as string
+        name: payload.userId, // Use userId as name for now
+        accessToken: response.accessToken,
+        refreshToken: response.refreshToken,
+      };
+      
+      console.log('Created user object:', user);
+      
+      // Update auth store
+      setUser(user);
+      
+      // Redirect based on user type
+      if (user.userType === 'ADMIN') {
+        router.push('/admin');
+      } else {
+        router.push('/dashboard');
+      }
+    } catch (error: any) {
+      setErrors({
+        general: error.message || '로그인에 실패했습니다.',
+      });
     } finally {
       setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleLoginCallback = async (authCode: string) => {
     try {
       setIsLoading(true);
-      setError('');
+      setLoading(true);
       
-      // NextAuth의 기본 리다이렉션을 사용
-      const result = await signIn('google', {
-        redirect: false,
-        callbackUrl: '/dashboard'
-      });
+      const response = await authService.googleLogin({ authorizationCode: authCode });
       
-      if (result?.error) {
-        console.error('Google login error:', result.error);
-        setError(`Google 로그인에 실패했습니다: ${result.error}`);
-        return;
-      }
+      // Store tokens
+      localStorage.setItem('accessToken', response.accessToken);
+      localStorage.setItem('refreshToken', response.refreshToken);
       
-      if (result?.ok) {
-        // NextAuth 세션에서 토큰을 가져와서 localStorage에 저장
-        const session = await getSession();
-        if (session?.accessToken && session?.refreshToken) {
-          localStorage.setItem('accessToken', session.accessToken);
-          localStorage.setItem('refreshToken', session.refreshToken);
-          console.log('Google login tokens saved to localStorage');
-          
-          // Google 로그인 시 userInfo도 저장 (백엔드에서 받은 userType 사용)
-          const userInfo = {
-            userId: session.user?.id || 1,
-            name: session.user?.name || session.user?.email?.split('@')[0] || 'Google User',
-            userType: session.user?.userType || 'USER', // 백엔드에서 받은 userType 사용
-            onboardingCompleted: session.user?.onboardingCompleted || false
-          };
-          localStorage.setItem('userInfo', JSON.stringify(userInfo));
-          console.log('Google login userInfo saved to localStorage:', userInfo);
-        }
-        
-        // 성공적으로 로그인된 경우 대시보드로 리다이렉션
+      // Update auth store
+      setUser(response);
+      
+      // Clear URL parameters
+      window.history.replaceState({}, document.title, window.location.pathname);
+      
+      // Redirect based on user type
+      if (response.userType === 'ADMIN') {
+        router.push('/admin');
+      } else {
         router.push('/dashboard');
       }
-    } catch (error) {
-      console.error('Google login error:', error);
-      setError('Google 로그인 중 오류가 발생했습니다.');
+    } catch (error: any) {
+      setErrors({
+        general: error.message || 'Google 로그인에 실패했습니다.',
+      });
+    } finally {
       setIsLoading(false);
+      setLoading(false);
     }
+  };
+
+  const handleGoogleLogin = () => {
+    startGoogleLogin();
   };
 
   return (
-    <div className='w-full h-screen bg-gray-50 flex items-center justify-center'>
-      <div className='max-w-md w-full mx-4'>
-        {/* 로고/브랜드 영역 */}
-        <div className='text-center mb-12'>
-          <Link href="/" className='text-3xl font-light text-gray-900 tracking-wide'>
-            BUMAVIEW
-          </Link>
-          <div className='w-16 h-px bg-gray-300 mx-auto mt-4'></div>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div className="text-center">
+          <div className="mx-auto w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mb-4">
+            <span className="text-white font-bold text-2xl">B</span>
+          </div>
+          <h2 className="text-3xl font-bold text-gray-900">BumaView</h2>
+          <p className="mt-2 text-gray-600">면접 준비의 새로운 기준</p>
         </div>
 
-        {/* 메인 콘텐츠 */}
-        <div className='bg-white rounded-sm shadow-sm border border-gray-100 p-8'>
-          <div className='text-center mb-8'>
-            <h2 className='text-xl font-light text-gray-800 mb-2'>
-              환영합니다
-            </h2>
-            <p className='text-sm text-gray-500 leading-relaxed'>
-              면접 준비를 위한 여정을 시작해보세요
-            </p>
-          </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-center">로그인</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {errors.general && (
+                <div className="bg-red-50 border border-red-200 rounded-md p-3">
+                  <p className="text-sm text-red-600">{errors.general}</p>
+                </div>
+              )}
 
-          {/* 로그인 폼 */}
-          <form onSubmit={handleSubmit} className='space-y-4'>
-            {error && (
-              <div className='bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-sm text-sm'>
-                {error}
-              </div>
-            )}
-
-            <div>
-              <input
-                type='text'
-                name='userId'
-                placeholder='사용자 ID'
+              <Input
+                label="아이디"
+                name="userId"
                 value={formData.userId}
-                onChange={handleChange}
-                required
-                className='w-full px-4 py-3 border border-gray-200 rounded-sm text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:border-gray-400 transition-colors'
+                onChange={handleInputChange}
+                error={errors.userId}
+                placeholder="아이디를 입력하세요"
+                disabled={isLoading}
               />
-            </div>
 
-            <div>
-              <input
-                type='password'
-                name='password'
-                placeholder='비밀번호'
+              <Input
+                label="비밀번호"
+                name="password"
+                type="password"
                 value={formData.password}
-                onChange={handleChange}
-                required
-                className='w-full px-4 py-3 border border-gray-200 rounded-sm text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:border-gray-400 transition-colors'
+                onChange={handleInputChange}
+                error={errors.password}
+                placeholder="비밀번호를 입력하세요"
+                disabled={isLoading}
               />
+
+              <Button
+                type="submit"
+                className="w-full"
+                loading={isLoading}
+                disabled={isLoading}
+              >
+                로그인
+              </Button>
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-300" />
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-white text-gray-500">또는</span>
+                </div>
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={handleGoogleLogin}
+                disabled={isLoading}
+              >
+                <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                  <path
+                    fill="currentColor"
+                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                  />
+                  <path
+                    fill="currentColor"
+                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                  />
+                  <path
+                    fill="currentColor"
+                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                  />
+                  <path
+                    fill="currentColor"
+                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                  />
+                </svg>
+                Google로 로그인
+              </Button>
+            </form>
+
+            <div className="mt-6 text-center">
+              <p className="text-sm text-gray-600">
+                계정이 없으신가요?{' '}
+                <Link href="/register" className="font-medium text-blue-600 hover:text-blue-500">
+                  회원가입
+                </Link>
+              </p>
             </div>
-
-
-            <button
-              type='submit'
-              disabled={isLoading}
-              className='w-full bg-gray-900 text-white py-3 rounded-sm text-sm font-medium hover:bg-gray-800 transition-colors mt-6 disabled:opacity-50 disabled:cursor-not-allowed'
-            >
-              {isLoading ? '로그인 중...' : '로그인'}
-            </button>
-            
-            {/* 구분선 */}
-            <div className='flex items-center my-6'>
-              <div className='flex-1 h-px bg-gray-200'></div>
-              <span className='px-4 text-xs text-gray-400'>또는</span>
-              <div className='flex-1 h-px bg-gray-200'></div>
-            </div>
-
-            {/* 구글 로그인 버튼 */}
-            <button
-              type='button'
-              onClick={handleGoogleLogin}
-              disabled={isLoading}
-              className='w-full bg-white border border-gray-200 text-gray-700 py-3 rounded-sm text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed'
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24">
-                <path fill="#4285f4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                <path fill="#34a853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                <path fill="#fbbc05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                <path fill="#ea4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-              </svg>
-              {isLoading ? '로그인 중...' : 'Google로 로그인'}
-            </button>
-          </form>
-
-          {/* 추가 링크 */}
-          <div className='text-center mt-6 pt-6 border-t border-gray-100'>
-            <p className='text-xs text-gray-400'>
-              계정이 없으신가요?{' '}
-              <Link href='/register' className='text-gray-600 hover:text-gray-800 transition-colors'>
-                회원가입
-              </Link>
-            </p>
-          </div>
-        </div>
-
-        {/* 하단 텍스트 */}
-        <div className='text-center mt-8'>
-          <p className='text-xs text-gray-400'>
-            © 2024 BUMAVIEW. All rights reserved.
-          </p>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
-};
-
-export default LoginPage;
+}

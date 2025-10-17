@@ -1,222 +1,168 @@
-# BUMAVIEW
+# BumaView Frontend
 
-> AI 기반 맞춤형 면접 연습 플랫폼
-
-BUMAVIEW는 마이스터고 학생들을 위한 AI 기반 면접 연습 플랫폼입니다. 개인의 수준과 목표에 맞는 맞춤형 면접 문제를 제공하고, 실시간 피드백을 통해 면접 실력을 향상시킬 수 있습니다.
+면접 준비의 새로운 기준을 제시하는 BumaView의 프론트엔드 애플리케이션입니다.
 
 ## 🚀 주요 기능
 
-### 📝 면접 연습
-- **맞춤형 문제 제공**: 개인의 수준과 관심 분야에 맞는 면접 문제 추천
-- **다양한 카테고리**: 기술, 인성, 상황판단 등 다양한 면접 유형 지원
-- **난이도 조절**: 초급부터 고급까지 단계별 연습 가능
-- **실시간 피드백**: AI 기반 답변 분석 및 개선점 제시
+- **인증 시스템**: 일반 로그인 및 Google OAuth 로그인
+- **면접 연습**: 실시간 모의면접 시스템
+- **문제 관리**: 다양한 카테고리의 면접 문제
+- **북마크 관리**: 폴더별 문제 관리
+- **관리자 기능**: 문제 CRUD 및 일괄 등록
+- **대시보드**: 통계 및 최근 활동
 
-### 📊 학습 관리
-- **대시보드**: 학습 진도와 통계를 한눈에 확인
-- **북마크 기능**: 중요한 문제를 저장하고 반복 학습
-- **학습 기록**: 면접 연습 이력과 성과 추적
-- **진도 관리**: 단계별 학습 목표 설정 및 달성도 확인
+## 🛠️ 기술 스택
 
-### 👤 사용자 관리
-- **회원가입/로그인**: 안전한 계정 관리
-- **구글 로그인**: OAuth 2.0 기반 소셜 로그인
-- **온보딩**: 초기 설정을 통한 맞춤형 경험 제공
-- **프로필 관리**: 개인 정보 및 학습 목표 설정
+- **Framework**: Next.js 15 (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS
+- **State Management**: Zustand
+- **HTTP Client**: Axios
+- **Authentication**: NextAuth.js
+- **UI Components**: Custom Components
 
-### 🔧 관리자 기능
-- **문제 관리**: 면접 문제 추가, 수정, 삭제
-- **사용자 관리**: 회원 정보 및 학습 현황 관리
-- **통계 분석**: 플랫폼 사용 현황 및 성과 분석
+## 📦 설치 및 실행
 
-## 🛠 기술 스택
+### 1. 의존성 설치
 
-### Frontend
-- **Next.js 15.5.4** - React 기반 풀스택 프레임워크
-- **React 19.1.0** - 사용자 인터페이스 라이브러리
-- **TypeScript** - 타입 안전성을 위한 정적 타입 언어
-- **Tailwind CSS 4** - 유틸리티 우선 CSS 프레임워크
+```bash
+bun install
+# 또는
+npm install
+```
 
-### Backend
-- **Next.js API Routes** - 서버리스 API 엔드포인트
-- **NextAuth.js** - 인증 및 세션 관리
-- **JWT (jsonwebtoken)** - 인증 및 보안
-- **bcryptjs** - 비밀번호 암호화
+### 2. 환경 변수 설정
 
-### 상태 관리 & 데이터 페칭
-- **Zustand** - 경량 상태 관리 라이브러리
-- **TanStack Query** - 서버 상태 관리 및 캐싱
-- **Axios** - HTTP 클라이언트
+`.env.local` 파일을 생성하고 다음 내용을 추가하세요:
 
-### 유틸리티
-- **Zod** - 스키마 검증
-- **XLSX** - 엑셀 파일 처리
+```env
+# API Configuration
+NEXT_PUBLIC_API_BASE_URL=https://bnuma-viewew-be.vercel.app
 
-## 📁 프로젝트 구조
+# NextAuth Configuration
+NEXTAUTH_URL=https://bnuma-viewew-fe-v2.vercel.app
+NEXTAUTH_SECRET=dkjmklopuitrewsdfhgfdeeuyjjhm+==dnkgljjnnmmkjnbvzzxdsdfgh
+
+# Google OAuth Configuration
+GOOGLE_CLIENT_ID=1055022639559-es8qf9ldooropmnm5a1l2oj1o2tip1qi.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=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
+GOOGLE_USER_INFO_URL=https://www.googleapis.com/oauth2/v3/userinfo
+GOOGLE_TOKEN_URL=https://oauth2.googleapis.com/token
+GOOGLE_REDIRECT_URI=https://bnuma-viewew-fe-v2.vercel.app/login
+
+# Database Configuration (if using Prisma)
+DATABASE_URL="mariadb://admin:qwer!Q@svc.sel3.cloudtype.app:31480/animal"
+```
+
+### 3. 개발 서버 실행
+
+```bash
+bun dev
+# 또는
+npm run dev
+```
+
+브라우저에서 [http://localhost:3000](http://localhost:3000)을 열어 확인하세요.
+
+## 🏗️ 프로젝트 구조
 
 ```
 bumaview/
 ├── app/                    # Next.js App Router
 │   ├── api/               # API 라우트
-│   │   ├── auth/          # 인증 관련 API
-│   │   ├── bookmarks/     # 북마크 API
-│   │   ├── dashboard/     # 대시보드 API
-│   │   ├── profile/       # 프로필 API
-│   │   └── questions/     # 문제 관리 API
 │   ├── admin/             # 관리자 페이지
 │   ├── bookmarks/         # 북마크 페이지
 │   ├── dashboard/         # 대시보드 페이지
 │   ├── login/             # 로그인 페이지
-│   ├── onboarding/        # 온보딩 페이지
 │   ├── practice/          # 면접 연습 페이지
-│   ├── register/          # 회원가입 페이지
-│   └── user/              # 사용자 관련 페이지
+│   └── register/          # 회원가입 페이지
 ├── components/            # 재사용 가능한 컴포넌트
-│   ├── common/           # 공통 UI 컴포넌트
-│   └── Header.tsx        # 헤더 컴포넌트
+│   ├── ui/               # UI 컴포넌트
+│   ├── Header.tsx        # 헤더 컴포넌트
+│   └── Layout.tsx        # 레이아웃 컴포넌트
 ├── lib/                   # 유틸리티 및 설정
-│   ├── auth.ts           # 인증 관련 함수
-│   ├── data.ts           # 데이터 관리
-│   ├── middleware.ts     # 미들웨어
-│   ├── types.ts          # 타입 정의
-│   └── util.ts           # 유틸리티 함수
-└── types/                # 타입 정의 파일
+│   ├── api.ts            # API 클라이언트
+│   ├── auth-config.ts    # NextAuth 설정
+│   ├── google-auth.ts    # Google OAuth 유틸리티
+│   └── utils.ts          # 유틸리티 함수
+├── services/              # API 서비스
+│   ├── auth.service.ts   # 인증 서비스
+│   ├── question.service.ts # 문제 관리 서비스
+│   ├── interview.service.ts # 면접 서비스
+│   ├── bookmark.service.ts # 북마크 서비스
+│   └── dashboard.service.ts # 대시보드 서비스
+├── store/                 # 상태 관리
+│   ├── auth.store.ts     # 인증 상태
+│   ├── question.store.ts # 문제 상태
+│   └── interview.store.ts # 면접 상태
+└── types/                 # 타입 정의
+    ├── api.ts            # API 타입
+    └── next-auth.d.ts    # NextAuth 타입 확장
 ```
 
-## 🚀 시작하기
+## 🔧 API 엔드포인트
 
-### 필수 요구사항
-- Node.js 18.0 이상
-- Bun (권장) 또는 npm/yarn
-
-### 설치 및 실행
-
-1. **저장소 클론**
-   ```bash
-   git clone https://github.com/BumaView/BumaView-FE.git
-   cd BumaView-FE
-   ```
-
-2. **의존성 설치**
-   ```bash
-   bun install
-   # 또는
-   npm install
-   ```
-
-3. **환경 변수 설정**
-   ```bash
-   cp .env.example .env.local
-   ```
-   
-   `.env.local` 파일에 필요한 환경 변수를 설정하세요:
-   ```env
-   # JWT Secrets
-   JWT_SECRET=your_jwt_secret
-   JWT_REFRESH_SECRET=your_refresh_secret
-   
-   # NextAuth.js
-   NEXTAUTH_SECRET=your_nextauth_secret
-   NEXTAUTH_URL=http://localhost:3000
-   
-   # Google OAuth (구글 로그인용)
-   GOOGLE_CLIENT_ID=your_google_client_id
-   GOOGLE_CLIENT_SECRET=your_google_client_secret
-   
-   # API Base URL
-   NEXT_PUBLIC_API_BASE_URL=http://localhost:3000
-   ```
-
-4. **구글 OAuth 설정**
-   - [Google Cloud Console](https://console.cloud.google.com/)에서 프로젝트 생성
-   - OAuth 2.0 클라이언트 ID 생성
-   - 승인된 리디렉션 URI에 `http://localhost:3000/api/auth/callback/google` 추가
-   - 클라이언트 ID와 시크릿을 환경 변수에 설정
-
-5. **개발 서버 실행**
-   ```bash
-   bun dev
-   # 또는
-   npm run dev
-   ```
-
-5. **브라우저에서 확인**
-   ```
-   http://localhost:3000
-   ```
-
-### 빌드 및 배포
-
-```bash
-# 프로덕션 빌드
-bun run build
-
-# 프로덕션 서버 실행
-bun run start
-```
-
-## 📖 사용법
-
-### 1. 회원가입 및 로그인
-- 홈페이지에서 "지금 시작하기" 버튼 클릭
-- 회원가입 후 이메일 인증 완료
-- 로그인하여 대시보드 접근
-
-### 2. 온보딩 완료
-- 첫 로그인 시 온보딩 과정 진행
-- 개인 정보, 관심 분야, 경험 수준 등 설정
-- 맞춤형 학습 경험을 위한 프로필 완성
-
-### 3. 면접 연습
-- 대시보드에서 "면접 연습 시작" 클릭
-- 원하는 카테고리와 난이도 선택
-- 문제를 읽고 답변 준비 후 녹화 시작
-- AI 피드백 확인 및 개선점 학습
-
-### 4. 학습 관리
-- 북마크한 문제로 반복 학습
-- 대시보드에서 학습 진도 확인
-- 통계를 통한 성과 분석
-
-## 🔧 개발
-
-### 코드 스타일
-- ESLint를 사용한 코드 품질 관리
-- TypeScript를 통한 타입 안전성 확보
-- Tailwind CSS를 활용한 일관된 디자인
-
-### 주요 스크립트
-```bash
-# 개발 서버 실행 (Turbopack 사용)
-bun dev
-
-# 프로덕션 빌드
-bun run build
-
-# 린팅
-bun run lint
-
-# 프로덕션 서버 실행
-bun run start
-```
-
-### API 엔드포인트
-
-#### 인증
+### 인증
 - `POST /api/auth/login` - 로그인
-- `POST /api/auth/register` - 회원가입
+- `POST /api/auth/login/google` - Google 로그인
+- `POST /api/auth/sign-up` - 회원가입
 - `POST /api/auth/logout` - 로그아웃
-- `POST /api/auth/verify` - 토큰 검증
 
-#### 문제 관리
+### 문제 관리
 - `GET /api/questions` - 문제 목록 조회
-- `GET /api/questions/[id]` - 특정 문제 조회
+- `GET /api/questions/{id}` - 문제 단건 조회
 - `POST /api/questions/search` - 문제 검색
+- `GET /api/interviews/random` - 랜덤 질문 추출
+- `POST /api/interviews/random/filter` - 범위 지정 랜덤 질문
 
-#### 북마크
-- `GET /user/bookmarks` - 북마크 목록
-- `POST /user/bookmarks` - 북마크 추가
-- `DELETE /user/bookmarks/[id]` - 북마크 삭제
+### 면접 세션
+- `POST /api/interviews` - 모의면접 세션 생성
+- `POST /api/interviews/{id}` - 답변 기록
+- `POST /api/interviews/{id}/finish` - 면접 종료
+
+### 북마크
+- `GET /user/bookmarks` - 북마크 폴더 목록
+- `POST /user/bookmarks/forders` - 폴더 생성
+- `POST /user/bookmarks` - 문제 북마크
+- `GET /api/bookmarks/{id}` - 폴더별 북마크 조회
+
+### 대시보드
+- `GET /api/dashboard` - 대시보드 데이터
+
+### 관리자 기능
+- `POST /admin/questions` - 문제 단건 등록
+- `POST /admin/questions/sheets` - Google Sheets 일괄 등록
+- `PATCH /admin/questions/{id}` - 문제 수정
+- `DELETE /admin/questions/{id}` - 문제 단건 삭제
+- `DELETE /admin/questions` - 문제 일괄 삭제
+
+## 🎨 UI/UX 특징
+
+- **반응형 디자인**: 모든 디바이스에서 완벽 작동
+- **모던한 디자인**: Tailwind CSS 기반의 아름다운 UI
+- **직관적인 UX**: 사용자 친화적인 인터페이스
+- **다크 모드 지원**: (향후 구현 예정)
+- **애니메이션**: 부드러운 전환 효과
+
+## 🚀 배포
+
+### Vercel 배포
+
+1. GitHub에 코드 푸시
+2. Vercel에서 프로젝트 연결
+3. 환경 변수 설정
+4. 자동 배포 완료
+
+### 환경 변수 설정 (Vercel)
+
+Vercel 대시보드에서 다음 환경 변수들을 설정하세요:
+
+- `NEXT_PUBLIC_API_BASE_URL`
+- `NEXTAUTH_URL`
+- `NEXTAUTH_SECRET`
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+- `GOOGLE_REDIRECT_URI`
 
 ## 🤝 기여하기
 
@@ -228,7 +174,7 @@ bun run start
 
 ## 📄 라이선스
 
-이 프로젝트는 MIT 라이선스 하에 배포됩니다. 자세한 내용은 `LICENSE` 파일을 참조하세요.
+이 프로젝트는 MIT 라이선스 하에 배포됩니다.
 
 ## 📞 문의
 

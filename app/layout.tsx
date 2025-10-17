@@ -1,32 +1,26 @@
-import type { Metadata } from "next";
-import { Noto_Sans_KR } from "next/font/google";
-import Providers from "@/components/Providers";
-import "./globals.css";
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import './globals.css';
+import Layout from '@/components/Layout';
+
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: "bunaview",
-  description: "interview platform for meister highschool students",
+  title: 'BumaView - 면접 준비의 새로운 기준',
+  description: '체계적이고 효율적인 면접 준비를 위한 플랫폼',
 };
-
-const notoSansKR = Noto_Sans_KR({
-  variable: "--font-noto-sans-kr",
-  weight: ["400", "700"],
-  subsets: ["latin"],
-});
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="ko">
-      <body
-        className={`${notoSansKR.className} antialiased`}
-      >
-        <Providers>
+      <body className={inter.className}>
+        <Layout>
           {children}
-        </Providers>
+        </Layout>
       </body>
     </html>
   );

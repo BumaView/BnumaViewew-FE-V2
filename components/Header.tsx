@@ -1,91 +1,115 @@
-"use client"
+'use client';
 
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
-import { authService } from "@/services/authService";
-import { UserInfo } from "@/lib/types";
+import React, { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/store/auth.store';
+import { authService } from '@/services/auth.service';
+import { Button } from './ui/Button';
 
-export default function Header({ userInfo }: { userInfo: UserInfo | null }) {
-  const pathname = usePathname();
+const Header: React.FC = () => {
+  const { user, logout } = useAuthStore();
   const router = useRouter();
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleLogout = async () => {
-    setIsLoggingOut(true);
     try {
       const refreshToken = localStorage.getItem('refreshToken');
-      if (!refreshToken) {
-        // 토큰이 없으면 바로 로그인 페이지로 이동
-        router.push('/login');
-        return;
+      if (refreshToken) {
+        await authService.logout({ refreshToken });
       }
-
-      // authService를 사용하여 로그아웃
-      await authService.logout({ refreshToken });
-      
-      // 로컬 스토리지에서 토큰 제거
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('userInfo');
-      
-      // 로그인 페이지로 이동
-      router.push('/login');
     } catch (error) {
-      console.error('로그아웃 중 오류:', error);
-      // 오류가 발생해도 토큰은 제거하고 로그인 페이지로 이동
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('userInfo');
-      router.push('/login');
+      console.error('Logout error:', error);
     } finally {
-      setIsLoggingOut(false);
+      logout();
+      router.push('/login');
     }
   };
 
+  const navigation = [
+    { name: '대시보드', href: '/dashboard' },
+    { name: '면접 연습', href: '/practice' },
+    { name: '질문', href: '/questions' },
+    { name: '북마크', href: '/bookmarks' },
+    ...(user?.userType === 'ADMIN' ? [{ name: '관리자', href: '/admin' }] : []),
+  ];
+
   return (
-    <>
-<nav className="bg-white border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-8">
-              <Link href="/" className="text-2xl font-light text-gray-900 tracking-wide">
-                BUMAVIEW
-              </Link>
-              <div className="hidden md:flex space-x-6">
-                <Link href="/dashboard" className={pathname === "/dashboard" ? "text-sm text-gray-900 font-medium" : "text-sm text-gray-500 hover:text-gray-900 transition-colors"}>
-                  대시보드
-                </Link>
-                <Link href="/practice" className={pathname === "/practice" ? "text-sm text-gray-900 font-medium" : "text-sm text-gray-500 hover:text-gray-900 transition-colors"}>
-                  면접 연습
-                </Link>
-                <Link href="/bookmarks" className={pathname === "/bookmarks" ? "text-sm text-gray-900 font-medium" : "text-sm text-gray-500 hover:text-gray-900 transition-colors"}>
-                  북마크
-                </Link>
-                {userInfo?.userType === 'ADMIN' && (
-                  <Link href="/admin" className={pathname === "/admin" ? "text-sm text-blue-600 font-medium" : "text-sm text-blue-600 hover:text-blue-800 transition-colors"}>
-                    관리자
-                  </Link>
-                )}
-              </div>
+    <header className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          {/* Logo */}
+          <Link href="/dashboard" className="flex items-center space-x-2">
+            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-lg">B</span>
             </div>
-            <div className="flex items-center space-x-4">
+            <span className="text-xl font-bold text-gray-900">BumaView</span>
+          </Link>
+
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex space-x-8">
+            {navigation.map((item) => (
+              <Link
+                key={item.name}
+                href={item.href}
+                className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+              >
+                {item.name}
+              </Link>
+            ))}
+          </nav>
+
+          {/* User Menu */}
+          <div className="flex items-center space-x-4">
+            <div className="hidden md:flex items-center space-x-2">
               <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                <span className="text-xs text-gray-600 font-medium">
-                  {userInfo?.name.charAt(0)}
+                <span className="text-sm font-medium text-gray-700">
+                  {user?.name?.charAt(0).toUpperCase()}
                 </span>
               </div>
-              <button
-                onClick={handleLogout}
-                disabled={isLoggingOut}
-                className="text-sm text-gray-500 hover:text-gray-900 transition-colors disabled:opacity-50"
-              >
-                {isLoggingOut ? '로그아웃 중...' : '로그아웃'}
-              </button>
+              <span className="text-sm font-medium text-gray-700">{user?.name}</span>
             </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleLogout}
+            >
+              로그아웃
+            </Button>
+
+            {/* Mobile menu button */}
+            <button
+              className="md:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
           </div>
         </div>
-      </nav>
-    </>
+
+        {/* Mobile Navigation */}
+        {isMenuOpen && (
+          <div className="md:hidden border-t border-gray-200 py-4">
+            <nav className="space-y-2">
+              {navigation.map((item) => (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className="block px-3 py-2 text-gray-600 hover:text-gray-900 rounded-md text-sm font-medium"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  {item.name}
+                </Link>
+              ))}
+            </nav>
+          </div>
+        )}
+      </div>
+    </header>
   );
-}
+};
+
+export default Header;

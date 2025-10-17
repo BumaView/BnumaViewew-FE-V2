@@ -104,9 +104,9 @@ export const questionService = {
     },
 
     // 질문 수정 (관리자용)
-    editQuestion: async (questionId: number, data: question.EditQuestionRequest): Promise<question.EditQuestionResponse> => {
+    editQuestion: async (question_id: number, data: question.EditQuestionRequest): Promise<question.EditQuestionResponse> => {
         try {
-            const response = await api.patch(`/admin/questions/${questionId}`, data);
+            const response = await api.patch(`/admin/questions/${question_id}`, data);
             return response.data;
         } catch (error) {
             throw handleApiError(error);
@@ -114,9 +114,9 @@ export const questionService = {
     },
 
     // 질문 단건 삭제 (관리자용)
-    deleteQuestion: async (questionId: number): Promise<question.DeleteQuestionResponse> => {
+    deleteQuestion: async (question_id: number): Promise<question.DeleteQuestionResponse> => {
         try {
-            const response = await api.delete(`/admin/questions/${questionId}`);
+            const response = await api.delete(`/admin/questions/${question_id}`);
             return response.data;
         } catch (error) {
             throw handleApiError(error);

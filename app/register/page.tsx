@@ -89,9 +89,9 @@ export default function RegisterPage() {
       // User needs to login after signup
       alert('회원가입이 완료되었습니다. 로그인해주세요.');
       router.push('/login');
-    } catch (error: any) {
+    } catch (error: unknown) {
       setErrors({
-        general: error.message || '회원가입에 실패했습니다.',
+        general: (error as Error)?.message || '회원가입에 실패했습니다.',
       });
     } finally {
       setIsLoading(false);

@@ -103,9 +103,9 @@ export default function LoginPage() {
       } else {
         router.push('/dashboard');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       setErrors({
-        general: error.message || '로그인에 실패했습니다.',
+        general: (error as Error)?.message || '로그인에 실패했습니다.',
       });
     } finally {
       setIsLoading(false);
@@ -136,9 +136,9 @@ export default function LoginPage() {
       } else {
         router.push('/dashboard');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       setErrors({
-        general: error.message || 'Google 로그인에 실패했습니다.',
+        general: (error as Error)?.message || 'Google 로그인에 실패했습니다.',
       });
     } finally {
       setIsLoading(false);

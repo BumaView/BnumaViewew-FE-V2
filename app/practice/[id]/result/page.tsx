@@ -66,7 +66,6 @@ const ResultPage = ({ params }: { params: Promise<{ id: string }> | { id: string
 
       try {
         const parsedUserInfo = JSON.parse(storedUserInfo);
-        setUserInfo(parsedUserInfo);
         await loadSession();
       } catch (error) {
         console.error('Load data error:', error);
